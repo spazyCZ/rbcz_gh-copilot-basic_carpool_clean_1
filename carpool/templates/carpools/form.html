@@ -1,0 +1,123 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>{{ title }}</h1>
+    
+    <form method="POST" class="mt-4">
+        {{ form.csrf_token }}
+        
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <div class="form-group mb-3">
+                    {{ form.name.label(class="form-label") }}
+                    {{ form.name(class="form-control" + (" is-invalid" if form.name.errors else "")) }}
+                    {% if form.name.errors %}
+                    <div class="invalid-feedback">
+                        {% for error in form.name.errors %}
+                        <span>{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <div class="form-group mb-3">
+                    {{ form.origin.label(class="form-label") }}
+                    {{ form.origin(class="form-control" + (" is-invalid" if form.origin.errors else "")) }}
+                    {% if form.origin.errors %}
+                    <div class="invalid-feedback">
+                        {% for error in form.origin.errors %}
+                        <span>{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <div class="form-group mb-3">
+                    {{ form.destination.label(class="form-label") }}
+                    {{ form.destination(class="form-control" + (" is-invalid" if form.destination.errors else "")) }}
+                    {% if form.destination.errors %}
+                    <div class="invalid-feedback">
+                        {% for error in form.destination.errors %}
+                        <span>{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="form-group mb-3">
+                    {{ form.departure_time.label(class="form-label") }}
+                    {{ form.departure_time(class="form-control" + (" is-invalid" if form.departure_time.errors else ""), placeholder="YYYY-MM-DD HH:MM") }}
+                    <small class="form-text text-muted">Format: YYYY-MM-DD HH:MM</small>
+                    {% if form.departure_time.errors %}
+                    <div class="invalid-feedback">
+                        {% for error in form.departure_time.errors %}
+                        <span>{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <div class="form-group mb-3">
+                    {{ form.return_time.label(class="form-label") }}
+                    {{ form.return_time(class="form-control" + (" is-invalid" if form.return_time.errors else ""), placeholder="YYYY-MM-DD HH:MM") }}
+                    <small class="form-text text-muted">Format: YYYY-MM-DD HH:MM (Optional)</small>
+                    {% if form.return_time.errors %}
+                    <div class="invalid-feedback">
+                        {% for error in form.return_time.errors %}
+                        <span>{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <div class="form-group mb-3">
+                    {{ form.max_passengers.label(class="form-label") }}
+                    {{ form.max_passengers(class="form-control" + (" is-invalid" if form.max_passengers.errors else "")) }}
+                    {% if form.max_passengers.errors %}
+                    <div class="invalid-feedback">
+                        {% for error in form.max_passengers.errors %}
+                        <span>{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="form-group mb-3">
+            {{ form.notes.label(class="form-label") }}
+            {{ form.notes(class="form-control" + (" is-invalid" if form.notes.errors else ""), rows=4) }}
+            <small class="form-text text-muted">Additional information about the carpool (optional)</small>
+            {% if form.notes.errors %}
+            <div class="invalid-feedback">
+                {% for error in form.notes.errors %}
+                <span>{{ error }}</span>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="form-group d-flex justify-content-between">
+            <a href="{{ url_for('carpools.index') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back
+            </a>
+            {{ form.submit(class="btn btn-primary") }}
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Add datepicker to datetime fields if needed
+    document.addEventListener('DOMContentLoaded', function() {
+        // You can add JavaScript here to enhance the form
+        // For example, you could add a datepicker for the departure and return time fields
+    });
+</script>
+{% endblock %}

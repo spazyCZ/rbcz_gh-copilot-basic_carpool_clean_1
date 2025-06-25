@@ -1,0 +1,82 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>{{ title }}</h1>
+        <a href="{{ url_for('carpools.new_carpool') }}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Create New Carpool
+        </a>
+    </div>
+
+    <div class="mb-4">
+        <a href="{{ url_for('carpools.my_carpools') }}" class="btn btn-outline-primary">
+            <i class="fas fa-user"></i> My Carpools
+        </a>
+        <a href="{{ url_for('carpools.index') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-list"></i> All Carpools
+        </a>
+    </div>
+
+    {% if carpools %}
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+        {% for carpool in carpools %}
+        <div class="col">
+            <div class="card h-100 {% if carpool.status == 'cancelled' %}border-danger{% elif carpool.is_full() %}border-warning{% else %}border-primary{% endif %}">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">{{ carpool.name }}</h5>
+                    {% if carpool.status == 'cancelled' %}
+                    <span class="badge bg-danger">Cancelled</span>
+                    {% elif carpool.is_full() %}
+                    <span class="badge bg-warning">Full</span>
+                    {% else %}
+                    <span class="badge bg-success">Available</span>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    <p class="card-text">
+                        <strong><i class="fas fa-map-marker-alt"></i> From:</strong> {{ carpool.origin }}<br>
+                        <strong><i class="fas fa-map-marker"></i> To:</strong> {{ carpool.destination }}
+                    </p>
+                    <p class="card-text">
+                        <strong><i class="fas fa-calendar"></i> Departure:</strong> 
+                        {{ carpool.departure_time.strftime('%Y-%m-%d %H:%M') }}
+                    </p>
+                    {% if carpool.return_time %}
+                    <p class="card-text">
+                        <strong><i class="fas fa-calendar-check"></i> Return:</strong> 
+                        {{ carpool.return_time.strftime('%Y-%m-%d %H:%M') }}
+                    </p>
+                    {% endif %}
+                    <p class="card-text">
+                        <strong><i class="fas fa-users"></i> Passengers:</strong> 
+                        {{ carpool.current_passengers }}/{{ carpool.max_passengers }}
+                    </p>
+                    <p class="card-text">
+                        <strong><i class="fas fa-user"></i> Driver:</strong> 
+                        {{ carpool.driver.username }}
+                    </p>
+                </div>
+                <div class="card-footer">
+                    <a href="{{ url_for('carpools.view', id=carpool.id) }}" class="btn btn-primary btn-sm">
+                        <i class="fas fa-eye"></i> View Details
+                    </a>
+                    {% if carpool.driver_id == current_user.id %}
+                    <a href="{{ url_for('carpools.edit_carpool', id=carpool.id) }}" class="btn btn-secondary btn-sm">
+                        <i class="fas fa-edit"></i> Edit
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        <p>No carpools found.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

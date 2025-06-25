@@ -1,0 +1,121 @@
+/* Custom styles for Carpool Parking application */
+
+:root {
+    --primary-color: #007bff;
+    --secondary-color: #6c757d;
+    --success-color: #28a745;
+    --danger-color: #dc3545;
+    --warning-color: #ffc107;
+    --info-color: #17a2b8;
+    --light-color: #f8f9fa;
+    --dark-color: #343a40;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f5f5f5;
+}
+
+/* Card styling */
+.card {
+    border-radius: 10px;
+    overflow: hidden;
+    border: none;
+    margin-bottom: 20px;
+}
+
+.card-header {
+    font-weight: 600;
+}
+
+.card.shadow {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Button styling */
+.btn {
+    border-radius: 5px;
+    font-weight: 500;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.btn-primary:hover {
+    background-color: #0069d9;
+    border-color: #0062cc;
+}
+
+/* Form styling */
+.form-control, .form-select {
+    border-radius: 5px;
+    border: 1px solid #ced4da;
+    padding: 10px 15px;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+/* Navigation */
+.navbar {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.navbar-brand {
+    font-weight: 700;
+}
+
+.nav-link {
+    font-weight: 500;
+}
+
+.dropdown-menu {
+    border: none;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border-radius: 5px;
+}
+
+/* Footer */
+footer {
+    box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* Alerts */
+.alert {
+    border-radius: 5px;
+    border: none;
+}
+
+/* Tables */
+.table {
+    vertical-align: middle;
+}
+
+.table thead th {
+    background-color: #f8f9fa;
+    border-bottom: 2px solid var(--primary-color);
+}
+
+/* List groups */
+.list-group-item {
+    border-left: none;
+    border-right: none;
+}
+
+.list-group-item:first-child {
+    border-top: none;
+}
+
+.list-group-item:last-child {
+    border-bottom: none;
+}
+
+/* Badges */
+.badge {
+    font-weight: 500;
+    padding: 5px 10px;
+}

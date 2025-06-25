@@ -1,0 +1,101 @@
+{% extends 'layouts/base.html' %}
+
+{% block styles %}
+<style>
+    .log-table {
+        font-size: 0.9rem;
+    }
+    
+    .log-filter {
+        max-width: 200px;
+    }
+    
+    .action-badge {
+        min-width: 150px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3">System Logs</h1>
+        <p class="text-muted">View system activity logs</p>
+    </div>
+</div>
+
+<div class="card shadow">
+    <div class="card-header bg-primary text-white">
+        <div class="d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0">Activity Logs</h5>
+            <div>
+                <input type="text" class="form-control form-control-sm log-filter" id="log-filter" placeholder="Filter logs...">
+            </div>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover mb-0 log-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Action Type</th>
+                        <th>User</th>
+                        <th>Timestamp</th>
+                    </tr>
+                </thead>
+                <tbody id="log-table-body">
+                    {% for action in actions %}
+                    <tr class="log-entry">
+                        <td>{{ action.id }}</td>
+                        <td>
+                            {% if 'login' in action.action_type %}
+                            <span class="badge bg-success action-badge">{{ action.action_type }}</span>
+                            {% elif 'logout' in action.action_type %}
+                            <span class="badge bg-warning text-dark action-badge">{{ action.action_type }}</span>
+                            {% elif 'delete' in action.action_type %}
+                            <span class="badge bg-danger action-badge">{{ action.action_type }}</span>
+                            {% elif 'create' in action.action_type %}
+                            <span class="badge bg-primary action-badge">{{ action.action_type }}</span>
+                            {% elif 'update' in action.action_type %}
+                            <span class="badge bg-info action-badge">{{ action.action_type }}</span>
+                            {% else %}
+                            <span class="badge bg-secondary action-badge">{{ action.action_type }}</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ action.username }}</td>
+                        <td>{{ action.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" class="text-center">No logs found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const filterInput = document.getElementById('log-filter');
+        
+        filterInput.addEventListener('keyup', function() {
+            const filterValue = this.value.toLowerCase();
+            const logEntries = document.querySelectorAll('.log-entry');
+            
+            logEntries.forEach(entry => {
+                const text = entry.textContent.toLowerCase();
+                if (text.includes(filterValue)) {
+                    entry.style.display = '';
+                } else {
+                    entry.style.display = 'none';
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

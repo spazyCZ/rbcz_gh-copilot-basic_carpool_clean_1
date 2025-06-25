@@ -1,0 +1,132 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h2 class="mb-0">{{ carpool.name }}</h2>
+            {% if carpool.status == 'cancelled' %}
+            <span class="badge bg-danger">Cancelled</span>
+            {% elif carpool.is_full() %}
+            <span class="badge bg-warning">Full</span>
+            {% else %}
+            <span class="badge bg-success">Available</span>
+            {% endif %}
+        </div>
+        
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h4>Trip Information</h4>
+                    <ul class="list-group mb-4">
+                        <li class="list-group-item">
+                            <strong><i class="fas fa-map-marker-alt"></i> Origin:</strong> {{ carpool.origin }}
+                        </li>
+                        <li class="list-group-item">
+                            <strong><i class="fas fa-map-marker"></i> Destination:</strong> {{ carpool.destination }}
+                        </li>
+                        <li class="list-group-item">
+                            <strong><i class="fas fa-calendar"></i> Departure:</strong>
+                            {{ carpool.departure_time.strftime('%Y-%m-%d %H:%M') }}
+                        </li>
+                        {% if carpool.return_time %}
+                        <li class="list-group-item">
+                            <strong><i class="fas fa-calendar-check"></i> Return:</strong>
+                            {{ carpool.return_time.strftime('%Y-%m-%d %H:%M') }}
+                        </li>
+                        {% endif %}
+                        {% if carpool.notes %}
+                        <li class="list-group-item">
+                            <strong><i class="fas fa-clipboard"></i> Notes:</strong>
+                            <p class="mt-2">{{ carpool.notes }}</p>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </div>
+                
+                <div class="col-md-6">
+                    <h4>Participants</h4>
+                    <ul class="list-group mb-4">
+                        <li class="list-group-item bg-light">
+                            <strong><i class="fas fa-user-circle"></i> Driver:</strong> 
+                            {{ carpool.driver.username }}
+                            {% if is_driver %}
+                            <span class="badge bg-primary ms-2">You</span>
+                            {% endif %}
+                        </li>
+                        <li class="list-group-item">
+                            <strong><i class="fas fa-users"></i> Passengers:</strong> 
+                            {{ carpool.current_passengers }}/{{ carpool.max_passengers }}
+                        </li>
+                        {% if carpool.passengers %}
+                        {% for passenger in carpool.passengers %}
+                        <li class="list-group-item">
+                            <i class="fas fa-user"></i> {{ passenger.username }}
+                            {% if passenger.id == current_user.id %}
+                            <span class="badge bg-primary ms-2">You</span>
+                            {% endif %}
+                        </li>
+                        {% endfor %}
+                        {% else %}
+                        <li class="list-group-item text-muted">No passengers yet</li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="d-flex flex-wrap justify-content-between mt-3">
+                {% if is_driver and carpool.status == 'active' %}
+                <div>
+                    <a href="{{ url_for('carpools.edit_carpool', id=carpool.id) }}" class="btn btn-primary">
+                        <i class="fas fa-edit"></i> Edit Carpool
+                    </a>
+                    
+                    <form method="POST" action="{{ url_for('carpools.cancel', id=carpool.id) }}" class="d-inline">
+                        {{ cancel_form.csrf_token }}
+                        <button type="submit" class="btn btn-danger" 
+                                onclick="return confirm('Are you sure you want to cancel this carpool?');">
+                            <i class="fas fa-ban"></i> Cancel Carpool
+                        </button>
+                    </form>
+                </div>
+                {% endif %}
+                
+                {% if is_passenger and carpool.status == 'active' %}
+                <form method="POST" action="{{ url_for('carpools.leave', id=carpool.id) }}">
+                    {{ leave_form.csrf_token }}
+                    <button type="submit" class="btn btn-warning" 
+                            onclick="return confirm('Are you sure you want to leave this carpool?');">
+                        <i class="fas fa-sign-out-alt"></i> Leave Carpool
+                    </button>
+                </form>
+                {% endif %}
+                
+                {% if can_join %}
+                <form method="POST" action="{{ url_for('carpools.join', id=carpool.id) }}">
+                    {{ join_form.csrf_token }}
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-sign-in-alt"></i> Join Carpool
+                    </button>
+                </form>
+                {% endif %}
+                
+                {% if current_user.is_admin() %}
+                <form method="POST" action="{{ url_for('carpools.delete', id=carpool.id) }}" class="ms-auto">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-danger" 
+                            onclick="return confirm('Are you sure you want to delete this carpool? This action cannot be undone.');">
+                        <i class="fas fa-trash"></i> Delete Carpool
+                    </button>
+                </form>
+                {% endif %}
+                
+                <a href="{{ url_for('carpools.index') }}" class="btn btn-secondary ms-auto">
+                    <i class="fas fa-arrow-left"></i> Back to Carpools
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,96 @@
+{% extends 'layouts/base.html' %}
+
+{% block styles %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h3 class="card-title mb-0">{{ title }}</h3>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="">
+                    {{ form.hidden_tag() }}
+                    {{ form.username }}
+                    
+                    <div class="mb-3">
+                        {{ form.reservation_date.label(class="form-label") }}
+                        {{ form.reservation_date(class="form-control flatpickr") }}
+                        {% for error in form.reservation_date.errors %}
+                        <div class="text-danger">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.spot_id.label(class="form-label") }}
+                        {{ form.spot_id(class="form-select") }}
+                        {% for error in form.spot_id.errors %}
+                        <div class="text-danger">{{ error }}</div>
+                        {% endfor %}
+                        <small class="form-text text-muted">Available spots will be updated based on the selected date</small>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('reservations.index') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-1"></i> Back
+                        </a>
+                        {{ form.submit(class="btn btn-primary") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize date picker
+        const datePicker = flatpickr('.flatpickr', {
+            dateFormat: 'Y-m-d',
+            minDate: 'today',
+            onChange: function(selectedDates, dateStr) {
+                updateAvailableSpots(dateStr);
+            }
+        });
+        
+        // Update available spots based on selected date
+        function updateAvailableSpots(dateStr) {
+            fetch(`{{ url_for('reservations.api_available_spots') }}?date=${dateStr}`)
+                .then(response => response.json())
+                .then(data => {
+                    const spotSelect = document.getElementById('spot_id');
+                    const currentValue = spotSelect.value;
+                    
+                    // Clear existing options
+                    spotSelect.innerHTML = '';
+                    
+                    // Add new options
+                    data.spots.forEach(spot => {
+                        const option = document.createElement('option');
+                        option.value = spot.id;
+                        option.textContent = `${spot.id} - ${spot.location}`;
+                        spotSelect.appendChild(option);
+                    });
+                    
+                    // Try to restore the previously selected value if it still exists
+                    if (data.spots.some(spot => spot.id === currentValue)) {
+                        spotSelect.value = currentValue;
+                    }
+                })
+                .catch(error => console.error('Error fetching available spots:', error));
+        }
+        
+        // Initialize with the current date
+        const initialDate = document.querySelector('.flatpickr').value;
+        if (initialDate) {
+            updateAvailableSpots(initialDate);
+        }
+    });
+</script>
+{% endblock %}

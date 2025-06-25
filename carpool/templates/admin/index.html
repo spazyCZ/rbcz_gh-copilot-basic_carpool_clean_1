@@ -1,0 +1,147 @@
+{% extends 'layouts/base.html' %}
+
+{% block styles %}
+<style>
+    .admin-stat-card {
+        transition: transform 0.3s;
+    }
+    
+    .admin-stat-card:hover {
+        transform: translateY(-5px);
+    }
+    
+    .activity-list {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card shadow admin-stat-card bg-primary text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-users fa-3x mb-3"></i>
+                <h5 class="card-title">Users</h5>
+                <a href="{{ url_for('admin.users') }}" class="btn btn-light">Manage Users</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card shadow admin-stat-card bg-success text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-car fa-3x mb-3"></i>
+                <h5 class="card-title">Parking Spots</h5>
+                <a href="{{ url_for('parking.index') }}" class="btn btn-light">Manage Spots</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card shadow admin-stat-card bg-info text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-calendar-check fa-3x mb-3"></i>
+                <h5 class="card-title">Reservations</h5>
+                <a href="{{ url_for('reservations.index') }}" class="btn btn-light">Manage Reservations</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card shadow admin-stat-card bg-warning text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-history fa-3x mb-3"></i>
+                <h5 class="card-title">System Logs</h5>
+                <a href="{{ url_for('admin.logs') }}" class="btn btn-light">View Logs</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-7">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">System Activities Overview</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="activityChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-5">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">Recent Activities</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="list-group activity-list">
+                    {% for action in recent_actions %}
+                    <div class="list-group-item">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">{{ action.action_type }}</h6>
+                            <small>{{ action.timestamp.strftime('%Y-%m-%d %H:%M') }}</small>
+                        </div>
+                        <small>By: {{ action.username }}</small>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="card-footer text-center">
+                <a href="{{ url_for('admin.logs') }}" class="btn btn-outline-primary btn-sm">View All Logs</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Chart for action types
+        const actionCounts = {{ action_counts|tojson }};
+        const actionTypes = Object.keys(actionCounts);
+        const actionValues = Object.values(actionCounts);
+        
+        const colors = [
+            'rgba(0, 123, 255, 0.7)',
+            'rgba(40, 167, 69, 0.7)',
+            'rgba(255, 193, 7, 0.7)',
+            'rgba(220, 53, 69, 0.7)',
+            'rgba(23, 162, 184, 0.7)',
+            'rgba(111, 66, 193, 0.7)',
+            'rgba(102, 16, 242, 0.7)'
+        ];
+        
+        const ctx = document.getElementById('activityChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: actionTypes,
+                datasets: [{
+                    label: 'Actions by Type',
+                    data: actionValues,
+                    backgroundColor: colors.slice(0, actionTypes.length),
+                    borderColor: colors.slice(0, actionTypes.length).map(c => c.replace('0.7', '1')),
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            precision: 0
+                        }
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}
