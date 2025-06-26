@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+
+{% block title %}Page Not Found{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-8 col-md-10">
+            <div class="text-center py-5">
+                <!-- Error Icon -->
+                <div class="mb-4">
+                    <i class="fas fa-search fa-5x text-muted"></i>
+                </div>
+                
+                <!-- Error Message -->
+                <h1 class="display-1 fw-bold text-primary">404</h1>
+                <h2 class="mb-3">Oops! Page Not Found</h2>
+                <p class="lead text-muted mb-4">
+                    The page you're looking for doesn't exist. It might have been moved, deleted, or you may have entered an incorrect URL.
+                </p>
+                
+                <!-- Action Buttons -->
+                <div class="d-flex justify-content-center gap-3 flex-wrap">
+                    <a href="{{ url_for('main.dashboard') }}" class="btn btn-primary">
+                        <i class="fas fa-home"></i> Go to Dashboard
+                    </a>
+                    <button onclick="history.back()" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left"></i> Go Back
+                    </button>
+                    <a href="{{ url_for('main.reservations') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-parking"></i> View Reservations
+                    </a>
+                </div>
+                
+                <!-- Search Box -->
+                <div class="mt-5">
+                    <div class="row justify-content-center">
+                        <div class="col-md-6">
+                            <div class="input-group">
+                                <input type="text" class="form-control" placeholder="Search for what you need..." id="errorSearch">
+                                <button class="btn btn-outline-primary" type="button" id="searchButton">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+                            <div class="form-text text-start mt-2">
+                                Try searching for: reservations, parking spots, carpools, profile
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Quick Links -->
+                <div class="mt-5">
+                    <h5 class="text-muted mb-3">Quick Links</h5>
+                    <div class="row">
+                        <div class="col-md-3 col-sm-6 mb-3">
+                            <div class="card h-100 border-0 shadow-sm">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-calendar-plus fa-2x text-primary mb-2"></i>
+                                    <h6 class="card-title">Make Reservation</h6>
+                                    <p class="card-text small text-muted">Book a parking spot</p>
+                                    <a href="{{ url_for('main.new_reservation') }}" class="btn btn-sm btn-primary">Go</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-sm-6 mb-3">
+                            <div class="card h-100 border-0 shadow-sm">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-car fa-2x text-success mb-2"></i>
+                                    <h6 class="card-title">Carpools</h6>
+                                    <p class="card-text small text-muted">Join or create carpools</p>
+                                    <a href="{{ url_for('main.carpools') }}" class="btn btn-sm btn-success">Go</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-sm-6 mb-3">
+                            <div class="card h-100 border-0 shadow-sm">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-user fa-2x text-info mb-2"></i>
+                                    <h6 class="card-title">Profile</h6>
+                                    <p class="card-text small text-muted">Manage your account</p>
+                                    <a href="{{ url_for('main.profile') }}" class="btn btn-sm btn-info">Go</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-sm-6 mb-3">
+                            <div class="card h-100 border-0 shadow-sm">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-question-circle fa-2x text-warning mb-2"></i>
+                                    <h6 class="card-title">Help</h6>
+                                    <p class="card-text small text-muted">Get support</p>
+                                    <a href="mailto:support@carpool.local" class="btn btn-sm btn-warning">Contact</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.display-1 {
+    font-size: 6rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.card {
+    transition: transform 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+}
+
+@media (max-width: 768px) {
+    .display-1 {
+        font-size: 4rem;
+    }
+    
+    .fa-5x {
+        font-size: 3em !important;
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('errorSearch');
+    const searchButton = document.getElementById('searchButton');
+    
+    function performSearch() {
+        const query = searchInput.value.trim().toLowerCase();
+        
+        if (!query) {
+            return;
+        }
+        
+        // Define search mappings
+        const searchMappings = {
+            'reservation': '{{ url_for("main.reservations") }}',
+            'reservations': '{{ url_for("main.reservations") }}',
+            'book': '{{ url_for("main.new_reservation") }}',
+            'parking': '{{ url_for("main.reservations") }}',
+            'spot': '{{ url_for("main.reservations") }}',
+            'spots': '{{ url_for("main.reservations") }}',
+            'carpool': '{{ url_for("main.carpools") }}',
+            'carpools': '{{ url_for("main.carpools") }}',
+            'ride': '{{ url_for("main.carpools") }}',
+            'profile': '{{ url_for("main.profile") }}',
+            'account': '{{ url_for("main.profile") }}',
+            'dashboard': '{{ url_for("main.dashboard") }}',
+            'home': '{{ url_for("main.dashboard") }}',
+            'login': '{{ url_for("auth.login") }}',
+            'logout': '{{ url_for("auth.logout") }}',
+            'register': '{{ url_for("auth.register") }}',
+            'admin': '{{ url_for("admin.dashboard") if current_user.is_authenticated and current_user.role == "administrator" else url_for("main.dashboard") }}'
+        };
+        
+        // Find matching route
+        let targetUrl = null;
+        for (const [keyword, url] of Object.entries(searchMappings)) {
+            if (query.includes(keyword)) {
+                targetUrl = url;
+                break;
+            }
+        }
+        
+        if (targetUrl) {
+            window.location.href = targetUrl;
+        } else {
+            // Default to dashboard with search parameter
+            window.location.href = `{{ url_for("main.dashboard") }}?search=${encodeURIComponent(query)}`;
+        }
+    }
+    
+    searchButton.addEventListener('click', performSearch);
+    
+    searchInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            performSearch();
+        }
+    });
+    
+    // Auto-focus search on load
+    searchInput.focus();
+});
+</script>
+{% endblock %}

@@ -1,0 +1,413 @@
+{% extends "base.html" %}
+
+{% block title %}Profile - Carpool Parking{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2><i class="fas fa-user me-2"></i>My Profile</h2>
+                    <p class="text-muted mb-0">Manage your account and view activity history</p>
+                </div>
+                <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="row">
+        <!-- Profile Information -->
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-id-card me-2"></i>Profile Information
+                    </h5>
+                </div>
+                <div class="card-body text-center">
+                    <!-- Avatar -->
+                    <div class="mb-3">
+                        <div class="avatar-container mx-auto mb-3">
+                            <i class="fas fa-user-circle fa-5x text-primary"></i>
+                        </div>
+                        <h4 class="mb-1">{{ current_user.username }}</h4>
+                        <span class="badge bg-{{ 'danger' if current_user.role == 'administrator' else 'primary' }} mb-2">
+                            {{ current_user.role.title() }}
+                        </span>
+                    </div>
+                    
+                    <!-- Basic Info -->
+                    <div class="text-start">
+                        <div class="row mb-2">
+                            <div class="col-4"><strong>Email:</strong></div>
+                            <div class="col-8">{{ current_user.email }}</div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-4"><strong>Member Since:</strong></div>
+                            <div class="col-8">{{ current_user.created_at.strftime('%B %Y') if current_user.created_at else 'Unknown' }}</div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-4"><strong>Status:</strong></div>
+                            <div class="col-8">
+                                <span class="badge bg-success">Active</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <!-- Action Buttons -->
+                    <div class="d-grid gap-2">
+                        <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#editProfileModal">
+                            <i class="fas fa-edit me-1"></i>Edit Profile
+                        </button>
+                        <button type="button" class="btn btn-outline-warning btn-sm" data-bs-toggle="modal" data-bs-target="#changePasswordModal">
+                            <i class="fas fa-key me-1"></i>Change Password
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Activity Statistics -->
+        <div class="col-md-8 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-bar me-2"></i>Activity Summary
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <div class="text-center">
+                                <h3 class="text-primary mb-1" id="total-reservations">{{ stats.total_reservations }}</h3>
+                                <small class="text-muted">Total Reservations</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="text-center">
+                                <h3 class="text-success mb-1" id="upcoming-reservations">{{ stats.upcoming_reservations }}</h3>
+                                <small class="text-muted">Upcoming</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="text-center">
+                                <h3 class="text-info mb-1" id="carpools-organized">{{ stats.carpools_organized }}</h3>
+                                <small class="text-muted">Carpools Organized</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="text-center">
+                                <h3 class="text-warning mb-1" id="carpools-joined">{{ stats.carpools_joined }}</h3>
+                                <small class="text-muted">Carpools Joined</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Recent Reservations -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-calendar-check me-2"></i>Recent Reservations
+                    </h5>
+                    <a href="{{ url_for('main.reservations') }}" class="btn btn-sm btn-outline-primary">
+                        View All
+                    </a>
+                </div>
+                <div class="card-body">
+                    <div id="recent-reservations">
+                        {% if recent_reservations %}
+                            {% for reservation in recent_reservations[:5] %}
+                                <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+                                    <div>
+                                        <strong>{{ reservation.name }}</strong>
+                                        <br>
+                                        <small class="text-muted">
+                                            <i class="fas fa-parking me-1"></i>Spot {{ reservation.spot_id }}
+                                            <i class="fas fa-calendar ms-2 me-1"></i>{{ reservation.reservation_date.strftime('%m/%d/%Y') }}
+                                        </small>
+                                    </div>
+                                    <span class="badge bg-{% if reservation.reservation_date < moment().date() %}secondary{% elif reservation.reservation_date == moment().date() %}success{% else %}primary{% endif %}">
+                                        {% if reservation.reservation_date < moment().date() %}
+                                            Past
+                                        {% elif reservation.reservation_date == moment().date() %}
+                                            Today
+                                        {% else %}
+                                            Upcoming
+                                        {% endif %}
+                                    </span>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <p class="text-center text-muted">No reservations yet</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Carpool Activity -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-users me-2"></i>Carpool Activity
+                    </h5>
+                    <a href="{{ url_for('main.carpools') }}" class="btn btn-sm btn-outline-primary">
+                        View All
+                    </a>
+                </div>
+                <div class="card-body">
+                    <div id="recent-carpools">
+                        {% if recent_carpools %}
+                            {% for carpool in recent_carpools[:5] %}
+                                <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+                                    <div>
+                                        <strong>{{ carpool.name }}</strong>
+                                        <br>
+                                        <small class="text-muted">
+                                            <i class="fas fa-route me-1"></i>{{ carpool.origin }} → {{ carpool.destination }}
+                                            <br>
+                                            <i class="fas fa-clock me-1"></i>{{ carpool.departure_time.strftime('%m/%d/%Y %I:%M %p') }}
+                                        </small>
+                                    </div>
+                                    <div class="text-end">
+                                        {% if carpool.organizer_id == current_user.id %}
+                                            <span class="badge bg-info">Organizer</span>
+                                        {% else %}
+                                            <span class="badge bg-success">Participant</span>
+                                        {% endif %}
+                                        <br>
+                                        <small class="text-muted">{{ carpool.current_passengers }}/{{ carpool.max_passengers }}</small>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <p class="text-center text-muted">No carpool activity yet</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Activity History -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-history me-2"></i>Activity History
+                    </h5>
+                    <div class="btn-group" role="group">
+                        <input type="radio" class="btn-check" name="historyFilter" id="filterAll" value="" checked>
+                        <label class="btn btn-outline-primary btn-sm" for="filterAll">All</label>
+                        
+                        <input type="radio" class="btn-check" name="historyFilter" id="filterReservations" value="reservation">
+                        <label class="btn btn-outline-primary btn-sm" for="filterReservations">Reservations</label>
+                        
+                        <input type="radio" class="btn-check" name="historyFilter" id="filterCarpools" value="carpool">
+                        <label class="btn btn-outline-primary btn-sm" for="filterCarpools">Carpools</label>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div id="activity-history">
+                        <!-- Activity will be loaded via AJAX -->
+                        <div class="text-center">
+                            <div class="spinner-border spinner-border-sm text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p class="text-muted mt-2 mb-0">Loading activity history...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Profile Modal -->
+<div class="modal fade" id="editProfileModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Profile</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('main.profile') }}">
+                <div class="modal-body">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    
+                    <div class="mb-3">
+                        <label for="editUsername" class="form-label">Username</label>
+                        <input type="text" class="form-control" id="editUsername" name="username" value="{{ current_user.username }}" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="editEmail" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="editEmail" name="email" value="{{ current_user.email }}" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Change Password Modal -->
+<div class="modal fade" id="changePasswordModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Change Password</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('auth.change_password') }}">
+                <div class="modal-body">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    
+                    <div class="mb-3">
+                        <label for="currentPassword" class="form-label">Current Password</label>
+                        <input type="password" class="form-control" id="currentPassword" name="current_password" autocomplete="current-password" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="newPassword" class="form-label">New Password</label>
+                        <input type="password" class="form-control" id="newPassword" name="new_password" autocomplete="new-password" required>
+                        <div class="form-text">Minimum 6 characters</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="confirmPassword" class="form-label">Confirm New Password</label>
+                        <input type="password" class="form-control" id="confirmPassword" name="confirm_password" autocomplete="new-password" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning">Change Password</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Load activity history
+    loadActivityHistory();
+    
+    // Set up filter buttons
+    document.querySelectorAll('input[name="historyFilter"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            if (this.checked) {
+                loadActivityHistory(this.value);
+            }
+        });
+    });
+    
+    // Password confirmation validation
+    const newPasswordField = document.getElementById('newPassword');
+    const confirmPasswordField = document.getElementById('confirmPassword');
+    
+    function validatePasswordMatch() {
+        if (confirmPasswordField.value && newPasswordField.value !== confirmPasswordField.value) {
+            confirmPasswordField.setCustomValidity('Passwords do not match');
+        } else {
+            confirmPasswordField.setCustomValidity('');
+        }
+    }
+    
+    newPasswordField.addEventListener('input', validatePasswordMatch);
+    confirmPasswordField.addEventListener('input', validatePasswordMatch);
+});
+
+function loadActivityHistory(filter = '') {
+    const url = filter ? `/api/user-activity?filter=${filter}` : '/api/user-activity';
+    
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            const container = document.getElementById('activity-history');
+            
+            if (!data.success || data.data.length === 0) {
+                container.innerHTML = '<p class="text-center text-muted">No activity found</p>';
+                return;
+            }
+            
+            container.innerHTML = data.data.map(activity => `
+                <div class="d-flex justify-content-between align-items-start border-bottom py-2">
+                    <div>
+                        <div class="d-flex align-items-center mb-1">
+                            <i class="fas fa-${getActivityIcon(activity.action_type)} me-2 text-${getActivityColor(activity.action_type)}"></i>
+                            <strong>${activity.action_type}</strong>
+                        </div>
+                        <p class="mb-1 text-muted">${activity.description || 'No description available'}</p>
+                        <small class="text-muted">
+                            <i class="fas fa-clock me-1"></i>${new Date(activity.timestamp).toLocaleDateString()}
+                        </small>
+                    </div>
+                    <span class="badge bg-${getActivityColor(activity.action_type)}">${activity.action_type}</span>
+                </div>
+            `).join('');
+        })
+        .catch(error => {
+            console.error('Error loading activity history:', error);
+            document.getElementById('activity-history').innerHTML = 
+                '<p class="text-center text-muted">Unable to load activity history</p>';
+        });
+}
+
+function getActivityIcon(type) {
+    const icons = {
+        'reservation': 'calendar-check',
+        'carpool': 'users',
+        'login': 'sign-in-alt',
+        'profile': 'user-edit',
+        'password': 'key',
+        'logout': 'sign-out-alt',
+        'register': 'user-plus'
+    };
+    return icons[type] || 'circle';
+}
+
+function getActivityColor(type) {
+    const colors = {
+        'reservation': 'primary',
+        'carpool': 'success',
+        'login': 'info',
+        'profile': 'warning',
+        'password': 'danger',
+        'logout': 'secondary',
+        'register': 'success'
+    };
+    return colors[type] || 'secondary';
+}
+</script>
+{% endblock %}

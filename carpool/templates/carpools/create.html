@@ -1,0 +1,483 @@
+{% extends "base.html" %}
+
+{% block title %}Create Carpool - Carpool Parking{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2><i class="fas fa-plus-circle me-2"></i>Create New Carpool</h2>
+                    <p class="text-muted mb-0">Organize a carpool trip and invite others to join</p>
+                </div>
+                <a href="{{ url_for('main.carpools') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-1"></i>Back to Carpools
+                </a>
+            </div>
+        </div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="row">
+        <!-- Carpool Form -->
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-form me-2"></i>Trip Details
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('main.new_carpool') }}" id="carpoolForm">
+                        {{ form.hidden_tag() }}
+                        
+                        <!-- Basic Information -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.name.label(class="form-label") }}
+                                    {{ form.name(class="form-control" + (" is-invalid" if form.name.errors else "")) }}
+                                    {% if form.name.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.name.errors %}
+                                                <div>{{ error }}</div>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    <div class="form-text">Give your carpool trip a descriptive name</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.max_passengers.label(class="form-label") }}
+                                    {{ form.max_passengers(class="form-control" + (" is-invalid" if form.max_passengers.errors else ""), min="1", max="8") }}
+                                    {% if form.max_passengers.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.max_passengers.errors %}
+                                                <div>{{ error }}</div>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    <div class="form-text">Maximum number of passengers (including you)</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Locations -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.origin.label(class="form-label") }}
+                                    {{ form.origin(class="form-control" + (" is-invalid" if form.origin.errors else "")) }}
+                                    {% if form.origin.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.origin.errors %}
+                                                <div>{{ error }}</div>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    <div class="form-text">Starting location or meeting point</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.destination.label(class="form-label") }}
+                                    {{ form.destination(class="form-control" + (" is-invalid" if form.destination.errors else "")) }}
+                                    {% if form.destination.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.destination.errors %}
+                                                <div>{{ error }}</div>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    <div class="form-text">Final destination</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Date and Time -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.departure_time.label(class="form-label") }}
+                                    {{ form.departure_time(class="form-control" + (" is-invalid" if form.departure_time.errors else ""), id="departureTime") }}
+                                    {% if form.departure_time.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.departure_time.errors %}
+                                                <div>{{ error }}</div>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    <div class="form-text">When the trip starts</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.return_time.label(class="form-label") }}
+                                    {{ form.return_time(class="form-control" + (" is-invalid" if form.return_time.errors else ""), id="returnTime") }}
+                                    {% if form.return_time.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.return_time.errors %}
+                                                <div>{{ error }}</div>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    <div class="form-text">When the trip returns (optional)</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Notes -->
+                        <div class="mb-3">
+                            {{ form.notes.label(class="form-label") }}
+                            {{ form.notes(class="form-control" + (" is-invalid" if form.notes.errors else ""), rows="4") }}
+                            {% if form.notes.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.notes.errors %}
+                                        <div>{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">
+                                Additional information about the trip (meeting point details, cost sharing, etc.)
+                            </div>
+                        </div>
+
+                        <!-- Submit Buttons -->
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('main.carpools') }}" class="btn btn-outline-secondary me-md-2">Cancel</a>
+                            {{ form.submit(class="btn btn-success") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tips and Guidelines -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-lightbulb me-2"></i>Tips for Organizing Carpools
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="tips-list">
+                        <div class="tip-item mb-3">
+                            <i class="fas fa-clock text-primary me-2"></i>
+                            <small>
+                                <strong>Be specific with timing:</strong> Include exact departure time and meeting point details.
+                            </small>
+                        </div>
+                        
+                        <div class="tip-item mb-3">
+                            <i class="fas fa-map-marker-alt text-success me-2"></i>
+                            <small>
+                                <strong>Clear locations:</strong> Use specific addresses or landmarks for origin and destination.
+                            </small>
+                        </div>
+                        
+                        <div class="tip-item mb-3">
+                            <i class="fas fa-dollar-sign text-warning me-2"></i>
+                            <small>
+                                <strong>Cost sharing:</strong> Mention how expenses (gas, tolls, parking) will be shared.
+                            </small>
+                        </div>
+                        
+                        <div class="tip-item mb-3">
+                            <i class="fas fa-phone text-info me-2"></i>
+                            <small>
+                                <strong>Contact info:</strong> Share your contact information for coordination.
+                            </small>
+                        </div>
+                        
+                        <div class="tip-item mb-3">
+                            <i class="fas fa-shield-alt text-danger me-2"></i>
+                            <small>
+                                <strong>Safety first:</strong> Verify participants and meet in safe, public locations.
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Preview Card -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-eye me-2"></i>Trip Preview
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div id="tripPreview">
+                        <div class="text-center text-muted">
+                            <i class="fas fa-car fa-2x mb-2"></i>
+                            <p class="mb-0">Fill out the form to see a preview of your carpool trip</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Templates -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-templates me-2"></i>Quick Templates
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button type="button" class="btn btn-sm btn-outline-primary template-btn" 
+                                data-template="airport">
+                            Airport Trip
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-primary template-btn" 
+                                data-template="conference">
+                            Conference/Event
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-primary template-btn" 
+                                data-template="shopping">
+                            Shopping Trip
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-primary template-btn" 
+                                data-template="commute">
+                            Daily Commute
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('carpoolForm');
+    const departureTime = document.getElementById('departureTime');
+    const returnTime = document.getElementById('returnTime');
+    
+    // Set minimum datetime to current time
+    const now = new Date();
+    const currentDateTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+    departureTime.min = currentDateTime;
+    returnTime.min = currentDateTime;
+
+    // Update return time minimum when departure time changes
+    departureTime.addEventListener('change', function() {
+        if (this.value) {
+            returnTime.min = this.value;
+            updatePreview();
+        }
+    });
+
+    // Form validation
+    form.addEventListener('submit', function(e) {
+        if (!validateForm()) {
+            e.preventDefault();
+        }
+    });
+
+    // Real-time preview updates
+    const previewFields = ['name', 'origin', 'destination', 'departure_time', 'return_time', 'max_passengers', 'notes'];
+    previewFields.forEach(fieldName => {
+        const field = document.getElementById(fieldName) || document.querySelector(`[name="${fieldName}"]`);
+        if (field) {
+            field.addEventListener('input', updatePreview);
+            field.addEventListener('change', updatePreview);
+        }
+    });
+
+    // Template buttons
+    document.querySelectorAll('.template-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            applyTemplate(this.dataset.template);
+        });
+    });
+
+    function validateForm() {
+        let isValid = true;
+        
+        // Check departure time is in the future
+        const departureValue = new Date(departureTime.value);
+        const now = new Date();
+        
+        if (departureValue <= now) {
+            showFieldError(departureTime, 'Departure time must be in the future');
+            isValid = false;
+        } else {
+            clearFieldError(departureTime);
+        }
+        
+        // Check return time is after departure time
+        if (returnTime.value) {
+            const returnValue = new Date(returnTime.value);
+            if (returnValue <= departureValue) {
+                showFieldError(returnTime, 'Return time must be after departure time');
+                isValid = false;
+            } else {
+                clearFieldError(returnTime);
+            }
+        }
+        
+        return isValid;
+    }
+
+    function showFieldError(field, message) {
+        field.classList.add('is-invalid');
+        
+        let feedback = field.parentNode.querySelector('.invalid-feedback');
+        if (!feedback) {
+            feedback = document.createElement('div');
+            feedback.className = 'invalid-feedback';
+            field.parentNode.appendChild(feedback);
+        }
+        
+        feedback.textContent = message;
+    }
+
+    function clearFieldError(field) {
+        field.classList.remove('is-invalid');
+        const feedback = field.parentNode.querySelector('.invalid-feedback');
+        if (feedback) {
+            feedback.remove();
+        }
+    }
+
+    function updatePreview() {
+        const data = {
+            name: document.querySelector('[name="name"]').value,
+            origin: document.querySelector('[name="origin"]').value,
+            destination: document.querySelector('[name="destination"]').value,
+            departure_time: document.querySelector('[name="departure_time"]').value,
+            return_time: document.querySelector('[name="return_time"]').value,
+            max_passengers: document.querySelector('[name="max_passengers"]').value,
+            notes: document.querySelector('[name="notes"]').value
+        };
+
+        const preview = document.getElementById('tripPreview');
+        
+        if (!data.name && !data.origin && !data.destination) {
+            preview.innerHTML = `
+                <div class="text-center text-muted">
+                    <i class="fas fa-car fa-2x mb-2"></i>
+                    <p class="mb-0">Fill out the form to see a preview of your carpool trip</p>
+                </div>
+            `;
+            return;
+        }
+
+        preview.innerHTML = `
+            <div class="carpool-preview">
+                <h6 class="text-primary">${data.name || 'Untitled Trip'}</h6>
+                
+                ${data.origin || data.destination ? `
+                <div class="route-info mb-2">
+                    <i class="fas fa-route text-muted me-1"></i>
+                    <small>
+                        ${data.origin || 'Origin'} 
+                        <i class="fas fa-arrow-right mx-1"></i> 
+                        ${data.destination || 'Destination'}
+                    </small>
+                </div>
+                ` : ''}
+                
+                ${data.departure_time ? `
+                <div class="time-info mb-2">
+                    <i class="fas fa-clock text-muted me-1"></i>
+                    <small>Departure: ${formatDateTime(data.departure_time)}</small>
+                </div>
+                ` : ''}
+                
+                ${data.return_time ? `
+                <div class="time-info mb-2">
+                    <i class="fas fa-undo text-muted me-1"></i>
+                    <small>Return: ${formatDateTime(data.return_time)}</small>
+                </div>
+                ` : ''}
+                
+                <div class="passenger-info mb-2">
+                    <i class="fas fa-users text-muted me-1"></i>
+                    <small>Max passengers: ${data.max_passengers || 1}</small>
+                </div>
+                
+                ${data.notes ? `
+                <div class="notes-info">
+                    <i class="fas fa-sticky-note text-muted me-1"></i>
+                    <small class="text-muted">${data.notes.substring(0, 100)}${data.notes.length > 100 ? '...' : ''}</small>
+                </div>
+                ` : ''}
+            </div>
+        `;
+    }
+
+    function formatDateTime(datetimeString) {
+        if (!datetimeString) return '';
+        const date = new Date(datetimeString);
+        return date.toLocaleString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+        });
+    }
+
+    function applyTemplate(templateType) {
+        const templates = {
+            airport: {
+                name: 'Airport Transfer',
+                origin: 'Downtown Office',
+                destination: 'International Airport',
+                notes: 'Splitting gas and parking costs. Meet at office lobby 30 minutes before departure.'
+            },
+            conference: {
+                name: 'Tech Conference Trip',
+                origin: 'Company Parking Lot',
+                destination: 'Convention Center',
+                notes: 'Attending the annual tech conference. Sharing parking and lunch costs.'
+            },
+            shopping: {
+                name: 'Weekend Shopping Trip',
+                origin: 'Central Mall Entrance',
+                destination: 'Outlet Mall',
+                notes: 'Weekend shopping trip. Planning to spend 3-4 hours. Splitting gas costs.'
+            },
+            commute: {
+                name: 'Daily Commute',
+                origin: 'Suburban Transit Station',
+                destination: 'Downtown Business District',
+                notes: 'Regular weekday commute. Cost sharing for gas and tolls. Flexible departure time ±10 minutes.'
+            }
+        };
+
+        const template = templates[templateType];
+        if (template) {
+            Object.keys(template).forEach(key => {
+                const field = document.querySelector(`[name="${key}"]`);
+                if (field) {
+                    field.value = template[key];
+                }
+            });
+            updatePreview();
+        }
+    }
+
+    // Initial preview update
+    updatePreview();
+});
+</script>
+{% endblock %}

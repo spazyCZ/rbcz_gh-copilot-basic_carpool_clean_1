@@ -1,0 +1,424 @@
+{% extends "base.html" %}
+
+{% block title %}Carpools - Carpool Parking{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2><i class="fas fa-users me-2"></i>Carpool Trips</h2>
+                    <p class="text-muted mb-0">Find and join carpool trips or organize your own</p>
+                </div>
+                <a href="{{ url_for('main.new_carpool') }}" class="btn btn-success">
+                    <i class="fas fa-plus me-1"></i>Create Carpool
+                </a>
+            </div>
+        </div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- Filter and Search -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body py-2">
+                    <div class="row g-2 align-items-center">
+                        <div class="col-md-3">
+                            <input type="text" id="searchInput" class="form-control form-control-sm" placeholder="Search trips...">
+                        </div>
+                        <div class="col-md-2">
+                            <select id="statusFilter" class="form-select form-select-sm">
+                                <option value="">All Status</option>
+                                <option value="upcoming">Upcoming</option>
+                                <option value="full">Full</option>
+                                <option value="available">Available</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <input type="date" id="dateFilter" class="form-control form-control-sm">
+                        </div>
+                        <div class="col-md-3">
+                            <input type="text" id="locationFilter" class="form-control form-control-sm" placeholder="Origin or destination...">
+                        </div>
+                        <div class="col-md-2">
+                            <button id="clearFilters" class="btn btn-sm btn-outline-secondary w-100">
+                                <i class="fas fa-times"></i> Clear
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 text-end">
+            <small class="text-muted">
+                Showing <span id="carpoolCount">{{ carpools|length }}</span> of {{ carpools|length }} trips
+            </small>
+        </div>
+    </div>
+
+    <!-- Carpools List -->
+    <div class="row">
+        <div class="col-12">
+            {% if carpools %}
+                <div id="carpoolsList">
+                    {% for carpool in carpools %}
+                        <div class="card mb-3 carpool-card" 
+                             data-name="{{ carpool.name.lower() }}"
+                             data-origin="{{ carpool.origin.lower() }}"
+                             data-destination="{{ carpool.destination.lower() }}"
+                             data-date="{{ carpool.departure_time.date().isoformat() }}"
+                             data-status="{% if carpool.current_passengers >= carpool.max_passengers %}full{% elif carpool.departure_time > moment() %}available{% else %}past{% endif %}">
+                            <div class="card-body">
+                                <div class="row align-items-center">
+                                    <div class="col-md-1 text-center">
+                                        <div class="carpool-icon">
+                                            <i class="fas fa-car fa-2x text-{{ 'success' if carpool.current_passengers < carpool.max_passengers else 'warning' }}"></i>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <h5 class="mb-1">{{ carpool.name }}</h5>
+                                        <div class="d-flex align-items-center mb-1">
+                                            <i class="fas fa-map-marker-alt text-success me-1"></i>
+                                            <span class="me-2">{{ carpool.origin }}</span>
+                                            <i class="fas fa-arrow-right text-muted me-1"></i>
+                                            <i class="fas fa-map-marker-alt text-danger me-1"></i>
+                                            <span>{{ carpool.destination }}</span>
+                                        </div>
+                                        <small class="text-muted">
+                                            <i class="fas fa-user me-1"></i>
+                                            Organized by: {{ carpool.organizer.username }}
+                                        </small>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <p class="mb-1">
+                                            <i class="fas fa-calendar me-1"></i>
+                                            {{ carpool.departure_time.strftime('%B %d, %Y') }}
+                                        </p>
+                                        <p class="mb-1">
+                                            <i class="fas fa-clock me-1"></i>
+                                            Departure: {{ carpool.departure_time.strftime('%I:%M %p') }}
+                                        </p>
+                                        {% if carpool.return_time %}
+                                            <p class="mb-1">
+                                                <i class="fas fa-undo me-1"></i>
+                                                Return: {{ carpool.return_time.strftime('%I:%M %p') }}
+                                            </p>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-2 text-center">
+                                        <div class="passenger-info">
+                                            <div class="progress mb-2" style="height: 10px;">
+                                                <div class="progress-bar bg-{{ 'success' if carpool.current_passengers < carpool.max_passengers else 'warning' }}" 
+                                                     style="width: {{ (carpool.current_passengers / carpool.max_passengers * 100) }}%"></div>
+                                            </div>
+                                            <small class="text-muted">
+                                                {{ carpool.current_passengers }}/{{ carpool.max_passengers }} passengers
+                                            </small>
+                                        </div>
+                                        {% if carpool.current_passengers >= carpool.max_passengers %}
+                                            <span class="badge bg-warning mt-1">Full</span>
+                                        {% elif carpool.departure_time <= moment() %}
+                                            <span class="badge bg-secondary mt-1">Departed</span>
+                                        {% else %}
+                                            <span class="badge bg-success mt-1">Available</span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-2 text-end">
+                                        {% if carpool.organizer_id == current_user.id %}
+                                            <div class="btn-group-vertical" role="group">
+                                                <a href="{{ url_for('main.carpool_detail', carpool_id=carpool.id) }}" 
+                                                   class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-eye"></i> View Details
+                                                </a>
+                                                <button type="button" 
+                                                        class="btn btn-sm btn-outline-danger delete-btn"
+                                                        data-carpool-id="{{ carpool.id }}"
+                                                        data-carpool-name="{{ carpool.name }}">
+                                                    <i class="fas fa-trash"></i> Delete
+                                                </button>
+                                            </div>
+                                        {% else %}
+                                            <div class="btn-group-vertical" role="group">
+                                                <button type="button" 
+                                                        class="btn btn-sm btn-primary view-btn"
+                                                        data-carpool-id="{{ carpool.id }}">
+                                                    <i class="fas fa-eye"></i> View Details
+                                                </button>
+                                                {% if carpool.current_passengers < carpool.max_passengers and carpool.departure_time > moment() %}
+                                                    <button type="button" 
+                                                            class="btn btn-sm btn-success join-btn"
+                                                            data-carpool-id="{{ carpool.id }}"
+                                                            data-carpool-name="{{ carpool.name }}">
+                                                        <i class="fas fa-user-plus"></i> Join
+                                                    </button>
+                                                {% endif %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                {% if carpool.notes %}
+                                    <div class="row mt-2">
+                                        <div class="col-12">
+                                            <div class="alert alert-info mb-0 py-2">
+                                                <small>
+                                                    <i class="fas fa-info-circle me-1"></i>
+                                                    <strong>Notes:</strong> {{ carpool.notes }}
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="card">
+                    <div class="card-body text-center py-5">
+                        <i class="fas fa-users-slash fa-3x text-muted mb-3"></i>
+                        <h4 class="text-muted">No Carpool Trips Found</h4>
+                        <p class="text-muted mb-4">Be the first to organize a carpool trip!</p>
+                        <a href="{{ url_for('main.new_carpool') }}" class="btn btn-success">
+                            <i class="fas fa-plus me-1"></i>Create First Carpool
+                        </a>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Carpool Details Modal -->
+<div class="modal fade" id="carpoolModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Carpool Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="carpoolModalBody">
+                <!-- Content will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" id="joinCarpoolBtn" class="btn btn-success" style="display: none;">
+                    <i class="fas fa-user-plus me-1"></i>Join Carpool
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Delete Carpool</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete the carpool <strong id="deleteCarpoolName"></strong>?</p>
+                <p class="text-muted">This action cannot be undone and will affect all participants.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteForm" method="POST" style="display: inline;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash me-1"></i>Delete Carpool
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchInput');
+    const statusFilter = document.getElementById('statusFilter');
+    const dateFilter = document.getElementById('dateFilter');
+    const locationFilter = document.getElementById('locationFilter');
+    const clearFiltersBtn = document.getElementById('clearFilters');
+    const carpoolCards = document.querySelectorAll('.carpool-card');
+    const carpoolCount = document.getElementById('carpoolCount');
+
+    function filterCarpools() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const statusValue = statusFilter.value;
+        const dateValue = dateFilter.value;
+        const locationTerm = locationFilter.value.toLowerCase();
+        let visibleCount = 0;
+
+        carpoolCards.forEach(card => {
+            let showCard = true;
+
+            // Search filter
+            if (searchTerm && !card.dataset.name.includes(searchTerm)) {
+                showCard = false;
+            }
+
+            // Status filter
+            if (statusValue && card.dataset.status !== statusValue) {
+                showCard = false;
+            }
+
+            // Date filter
+            if (dateValue && card.dataset.date !== dateValue) {
+                showCard = false;
+            }
+
+            // Location filter
+            if (locationTerm && 
+                !card.dataset.origin.includes(locationTerm) && 
+                !card.dataset.destination.includes(locationTerm)) {
+                showCard = false;
+            }
+
+            if (showCard) {
+                card.style.display = 'block';
+                visibleCount++;
+            } else {
+                card.style.display = 'none';
+            }
+        });
+
+        carpoolCount.textContent = visibleCount;
+    }
+
+    // Event listeners for filters
+    searchInput.addEventListener('input', filterCarpools);
+    statusFilter.addEventListener('change', filterCarpools);
+    dateFilter.addEventListener('change', filterCarpools);
+    locationFilter.addEventListener('input', filterCarpools);
+
+    clearFiltersBtn.addEventListener('click', function() {
+        searchInput.value = '';
+        statusFilter.value = '';
+        dateFilter.value = '';
+        locationFilter.value = '';
+        filterCarpools();
+    });
+
+    // View carpool details
+    document.querySelectorAll('.view-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const carpoolId = this.dataset.carpoolId;
+            viewCarpoolDetails(carpoolId);
+        });
+    });
+
+    // Delete carpool
+    document.querySelectorAll('.delete-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const carpoolId = this.dataset.carpoolId;
+            const carpoolName = this.dataset.carpoolName;
+            deleteCarpoolConfirm(carpoolId, carpoolName);
+        });
+    });
+
+    // Join carpool
+    document.querySelectorAll('.join-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const carpoolId = this.dataset.carpoolId;
+            const carpoolName = this.dataset.carpoolName;
+            joinCarpool(carpoolId, carpoolName);
+        });
+    });
+});
+
+function viewCarpoolDetails(carpoolId) {
+    fetch(`/api/carpools/${carpoolId}`)
+        .then(response => response.json())
+        .then(data => {
+            const modalBody = document.getElementById('carpoolModalBody');
+            modalBody.innerHTML = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Trip Information</h6>
+                        <table class="table table-sm">
+                            <tr><td><strong>Name:</strong></td><td>${data.name}</td></tr>
+                            <tr><td><strong>Origin:</strong></td><td>${data.origin}</td></tr>
+                            <tr><td><strong>Destination:</strong></td><td>${data.destination}</td></tr>
+                            <tr><td><strong>Departure:</strong></td><td>${data.departure_time}</td></tr>
+                            ${data.return_time ? `<tr><td><strong>Return:</strong></td><td>${data.return_time}</td></tr>` : ''}
+                            <tr><td><strong>Organizer:</strong></td><td>${data.organizer}</td></tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Passengers (${data.current_passengers}/${data.max_passengers})</h6>
+                        <div class="progress mb-2">
+                            <div class="progress-bar" style="width: ${(data.current_passengers / data.max_passengers * 100)}%"></div>
+                        </div>
+                        ${data.passengers.map(p => `<span class="badge bg-secondary me-1">${p}</span>`).join('')}
+                    </div>
+                </div>
+                ${data.notes ? `
+                <hr>
+                <div class="row">
+                    <div class="col-12">
+                        <h6>Notes</h6>
+                        <p class="text-muted">${data.notes}</p>
+                    </div>
+                </div>
+                ` : ''}
+            `;
+            
+            const modal = new bootstrap.Modal(document.getElementById('carpoolModal'));
+            modal.show();
+        })
+        .catch(error => {
+            console.error('Error loading carpool details:', error);
+            alert('Error loading carpool details');
+        });
+}
+
+function deleteCarpoolConfirm(carpoolId, carpoolName) {
+    document.getElementById('deleteCarpoolName').textContent = carpoolName;
+    document.getElementById('deleteForm').action = `/carpools/${carpoolId}/delete`;
+    
+    const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    modal.show();
+}
+
+function joinCarpool(carpoolId, carpoolName) {
+    if (confirm(`Join the carpool "${carpoolName}"?`)) {
+        fetch(`/api/carpools/${carpoolId}/join`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrf_token]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert(data.message || 'Failed to join carpool');
+            }
+        })
+        .catch(error => {
+            console.error('Error joining carpool:', error);
+            alert('Error joining carpool');
+        });
+    }
+}
+</script>
+{% endblock %}

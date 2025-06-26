@@ -1,0 +1,535 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - Carpool Parking{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2><i class="fas fa-shield-alt me-2 text-danger"></i>Admin Dashboard</h2>
+                    <p class="text-muted mb-0">System administration and monitoring</p>
+                </div>
+                <div class="text-end">
+                    <small class="text-muted">
+                        <i class="fas fa-clock me-1"></i>
+                        Last updated: <span id="lastUpdated">{{ moment().format('h:mm A') }}</span>
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Overview Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card border-primary h-100">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3 class="card-title text-primary mb-1" id="total-users">{{ stats.total_users }}</h3>
+                            <p class="card-text text-muted small">Total Users</p>
+                        </div>
+                        <i class="fas fa-users fa-2x text-primary opacity-25"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-3">
+            <div class="card border-success h-100">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3 class="card-title text-success mb-1" id="total-reservations">{{ stats.total_reservations }}</h3>
+                            <p class="card-text text-muted small">Total Reservations</p>
+                        </div>
+                        <i class="fas fa-calendar-check fa-2x text-success opacity-25"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-3">
+            <div class="card border-warning h-100">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3 class="card-title text-warning mb-1" id="total-carpools">{{ stats.total_carpools }}</h3>
+                            <p class="card-text text-muted small">Total Carpools</p>
+                        </div>
+                        <i class="fas fa-car fa-2x text-warning opacity-25"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-3">
+            <div class="card border-info h-100">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3 class="card-title text-info mb-1" id="system-health">{{ stats.system_health }}%</h3>
+                            <p class="card-text text-muted small">System Health</p>
+                        </div>
+                        <i class="fas fa-heartbeat fa-2x text-info opacity-25"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Admin Actions -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-bolt me-2"></i>Quick Actions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-2">
+                        <div class="col-md-2">
+                            <a href="{{ url_for('admin.users') }}" class="btn btn-primary w-100">
+                                <i class="fas fa-users me-1"></i>Manage Users
+                            </a>
+                        </div>
+                        <div class="col-md-2">
+                            <a href="{{ url_for('admin.parking_spots') }}" class="btn btn-success w-100">
+                                <i class="fas fa-parking me-1"></i>Manage Spots
+                            </a>
+                        </div>
+                        <div class="col-md-2">
+                            <a href="{{ url_for('admin.reservations') }}" class="btn btn-warning w-100">
+                                <i class="fas fa-calendar me-1"></i>View Reservations
+                            </a>
+                        </div>
+                        <div class="col-md-2">
+                            <a href="{{ url_for('admin.carpools') }}" class="btn btn-info w-100">
+                                <i class="fas fa-car me-1"></i>Manage Carpools
+                            </a>
+                        </div>
+                        <div class="col-md-2">
+                            <a href="{{ url_for('admin.activity_logs') }}" class="btn btn-secondary w-100">
+                                <i class="fas fa-list-alt me-1"></i>System Logs
+                            </a>
+                        </div>
+                        <div class="col-md-2">
+                            <button id="refreshData" class="btn btn-outline-primary w-100">
+                                <i class="fas fa-sync-alt me-1"></i>Refresh Data
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- System Activity Chart -->
+        <div class="col-md-8 mb-4">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-line me-2"></i>System Activity (Last 7 Days)
+                    </h5>
+                    <div class="btn-group" role="group">
+                        <input type="radio" class="btn-check" name="chartPeriod" id="period7" value="7" checked>
+                        <label class="btn btn-outline-primary btn-sm" for="period7">7 Days</label>
+                        
+                        <input type="radio" class="btn-check" name="chartPeriod" id="period30" value="30">
+                        <label class="btn btn-outline-primary btn-sm" for="period30">30 Days</label>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <canvas id="activityChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-history me-2"></i>Recent Admin Actions
+                    </h5>
+                    <a href="{{ url_for('admin.activity_logs') }}" class="btn btn-sm btn-outline-secondary">
+                        View All
+                    </a>
+                </div>
+                <div class="card-body">
+                    <div id="recent-actions" class="list-group list-group-flush">
+                        <!-- Actions will be loaded via AJAX -->
+                        <div class="text-center">
+                            <div class="spinner-border spinner-border-sm text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- User Statistics -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-user-chart me-2"></i>User Statistics
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="userStatsChart" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Status -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-server me-2"></i>System Status
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <span>Database:</span>
+                                <span class="badge bg-success" id="db-status">Connected</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <span>Cache:</span>
+                                <span class="badge bg-success" id="cache-status">Active</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <span>Storage:</span>
+                                <span class="badge bg-warning" id="storage-status">75% Used</span>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <span>Uptime:</span>
+                                <span class="text-muted" id="uptime">2d 5h 30m</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <span>Active Sessions:</span>
+                                <span class="text-muted" id="active-sessions">{{ stats.active_sessions }}</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <span>Errors (24h):</span>
+                                <span class="text-{{ 'danger' if stats.errors_24h > 0 else 'success' }}" id="errors-24h">{{ stats.errors_24h }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="text-center">
+                        <button id="exportLogs" class="btn btn-sm btn-outline-primary me-2">
+                            <i class="fas fa-download me-1"></i>Export Logs
+                        </button>
+                        <button id="clearCache" class="btn btn-sm btn-outline-warning">
+                            <i class="fas fa-broom me-1"></i>Clear Cache
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Registrations -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-user-plus me-2"></i>Recent User Registrations
+                    </h5>
+                    <small class="text-muted">Last 10 users</small>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="recentUsersTable">
+                            <thead>
+                                <tr>
+                                    <th>Username</th>
+                                    <th>Email</th>
+                                    <th>Role</th>
+                                    <th>Registration Date</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Users will be loaded via AJAX -->
+                                <tr>
+                                    <td colspan="6" class="text-center">
+                                        <div class="spinner-border spinner-border-sm text-primary" role="status">
+                                            <span class="visually-hidden">Loading...</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let activityChart = null;
+    let userStatsChart = null;
+
+    // Initialize charts
+    initializeCharts();
+    
+    // Load data
+    loadRecentActions();
+    loadRecentUsers();
+    
+    // Set up event listeners
+    document.getElementById('refreshData').addEventListener('click', refreshAllData);
+    document.getElementById('exportLogs').addEventListener('click', exportLogs);
+    document.getElementById('clearCache').addEventListener('click', clearCache);
+    
+    // Chart period change
+    document.querySelectorAll('input[name="chartPeriod"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            if (this.checked) {
+                loadActivityChart(this.value);
+            }
+        });
+    });
+
+    function initializeCharts() {
+        // Activity Chart
+        const activityCtx = document.getElementById('activityChart').getContext('2d');
+        loadActivityChart(7);
+
+        // User Stats Chart
+        const userStatsCtx = document.getElementById('userStatsChart').getContext('2d');
+        loadUserStatsChart();
+    }
+
+    function loadActivityChart(days) {
+        fetch(`/api/admin/activity-chart?days=${days}`)
+            .then(response => response.json())
+            .then(data => {
+                if (activityChart) {
+                    activityChart.destroy();
+                }
+
+                const ctx = document.getElementById('activityChart').getContext('2d');
+                activityChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: data.labels,
+                        datasets: [
+                            {
+                                label: 'Reservations',
+                                data: data.reservations,
+                                borderColor: '#28a745',
+                                backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                                tension: 0.1
+                            },
+                            {
+                                label: 'Carpools',
+                                data: data.carpools,
+                                borderColor: '#007bff',
+                                backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                                tension: 0.1
+                            },
+                            {
+                                label: 'User Logins',
+                                data: data.logins,
+                                borderColor: '#ffc107',
+                                backgroundColor: 'rgba(255, 193, 7, 0.1)',
+                                tension: 0.1
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            })
+            .catch(error => {
+                console.error('Error loading activity chart:', error);
+                document.getElementById('activityChart').parentElement.innerHTML = 
+                    '<p class="text-center text-muted">Unable to load chart data</p>';
+            });
+    }
+
+    function loadUserStatsChart() {
+        fetch('/api/admin/user-stats')
+            .then(response => response.json())
+            .then(data => {
+                const ctx = document.getElementById('userStatsChart').getContext('2d');
+                userStatsChart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Administrators', 'Regular Users', 'Guests'],
+                        datasets: [{
+                            data: [data.admins, data.users, data.guests],
+                            backgroundColor: [
+                                '#dc3545',
+                                '#28a745',
+                                '#6c757d'
+                            ]
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            }
+                        }
+                    }
+                });
+            })
+            .catch(error => {
+                console.error('Error loading user stats chart:', error);
+            });
+    }
+
+    function loadRecentActions() {
+        fetch('/api/admin/recent-actions')
+            .then(response => response.json())
+            .then(data => {
+                const container = document.getElementById('recent-actions');
+                if (data.length === 0) {
+                    container.innerHTML = '<p class="text-center text-muted">No recent actions</p>';
+                    return;
+                }
+
+                container.innerHTML = data.map(action => `
+                    <div class="list-group-item border-0 px-0">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">${action.action_type}</h6>
+                            <small class="text-muted">${action.timestamp}</small>
+                        </div>
+                        <p class="mb-1">${action.details}</p>
+                        <small class="text-muted">by ${action.username}</small>
+                    </div>
+                `).join('');
+            })
+            .catch(error => {
+                console.error('Error loading recent actions:', error);
+                document.getElementById('recent-actions').innerHTML = 
+                    '<p class="text-center text-muted">Unable to load actions</p>';
+            });
+    }
+
+    function loadRecentUsers() {
+        fetch('/api/admin/recent-users')
+            .then(response => response.json())
+            .then(data => {
+                const tbody = document.querySelector('#recentUsersTable tbody');
+                if (data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No recent users</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = data.map(user => `
+                    <tr>
+                        <td>${user.username}</td>
+                        <td>${user.email}</td>
+                        <td><span class="badge bg-${user.role === 'administrator' ? 'danger' : 'primary'}">${user.role}</span></td>
+                        <td>${user.created_at}</td>
+                        <td><span class="badge bg-success">Active</span></td>
+                        <td>
+                            <a href="/admin/users/${user.id}" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                `).join('');
+            })
+            .catch(error => {
+                console.error('Error loading recent users:', error);
+            });
+    }
+
+    function refreshAllData() {
+        const btn = document.getElementById('refreshData');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Refreshing...';
+        btn.disabled = true;
+
+        // Refresh stats
+        fetch('/api/admin/dashboard-stats')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('total-users').textContent = data.total_users;
+                document.getElementById('total-reservations').textContent = data.total_reservations;
+                document.getElementById('total-carpools').textContent = data.total_carpools;
+                document.getElementById('system-health').textContent = data.system_health + '%';
+                document.getElementById('active-sessions').textContent = data.active_sessions;
+                document.getElementById('errors-24h').textContent = data.errors_24h;
+            });
+
+        // Refresh other data
+        loadRecentActions();
+        loadRecentUsers();
+        
+        // Update timestamp
+        document.getElementById('lastUpdated').textContent = new Date().toLocaleTimeString();
+
+        setTimeout(() => {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }, 2000);
+    }
+
+    function exportLogs() {
+        window.location.href = '/api/admin/export-logs';
+    }
+
+    function clearCache() {
+        if (confirm('Are you sure you want to clear the system cache?')) {
+            fetch('/api/admin/clear-cache', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        CarpoolApp.utils.showToast('Cache cleared successfully', 'success');
+                    } else {
+                        CarpoolApp.utils.showToast('Failed to clear cache', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error clearing cache:', error);
+                    CarpoolApp.utils.showToast('Error clearing cache', 'error');
+                });
+        }
+    }
+
+    // Auto-refresh every 30 seconds
+    setInterval(function() {
+        loadRecentActions();
+        // Update timestamp
+        document.getElementById('lastUpdated').textContent = new Date().toLocaleTimeString();
+    }, 30000);
+});
+</script>
+{% endblock %}

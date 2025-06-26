@@ -1,0 +1,251 @@
+{% extends "base.html" %}
+
+{% block title %}Reservations - Carpool Parking{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2><i class="fas fa-calendar-check me-2"></i>My Reservations</h2>
+                <a href="{{ url_for('main.new_reservation') }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-1"></i>New Reservation
+                </a>
+            </div>
+        </div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- Filter Controls -->
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body py-2">
+                    <div class="row g-2 align-items-center">
+                        <div class="col-auto">
+                            <label class="form-label mb-0">Filter:</label>
+                        </div>
+                        <div class="col-auto">
+                            <select id="statusFilter" class="form-select form-select-sm">
+                                <option value="">All Reservations</option>
+                                <option value="upcoming">Upcoming</option>
+                                <option value="past">Past</option>
+                                <option value="today">Today</option>
+                            </select>
+                        </div>
+                        <div class="col-auto">
+                            <input type="date" id="dateFilter" class="form-control form-control-sm">
+                        </div>
+                        <div class="col-auto">
+                            <button id="clearFilters" class="btn btn-sm btn-outline-secondary">
+                                <i class="fas fa-times"></i> Clear
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 text-end">
+            <small class="text-muted">
+                Total: <span id="reservationCount">{{ reservations|length }}</span> reservations
+            </small>
+        </div>
+    </div>
+
+    <!-- Reservations List -->
+    <div class="row">
+        <div class="col-12">
+            {% if reservations %}
+                <div id="reservationsList">
+                    {% for reservation in reservations %}
+                        <div class="card mb-3 reservation-card" 
+                             data-date="{{ reservation.reservation_date.isoformat() }}"
+                             data-status="{% if reservation.reservation_date < moment().date() %}past{% elif reservation.reservation_date == moment().date() %}today{% else %}upcoming{% endif %}">
+                            <div class="card-body">
+                                <div class="row align-items-center">
+                                    <div class="col-md-2">
+                                        <div class="text-center">
+                                            <div class="parking-spot-badge">
+                                                <i class="fas fa-parking fa-2x text-primary"></i>
+                                                <h5 class="mb-0 mt-1">{{ reservation.spot_id }}</h5>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <h6 class="mb-1">{{ reservation.name }}</h6>
+                                        <p class="text-muted mb-1">
+                                            <i class="fas fa-map-marker-alt me-1"></i>
+                                            {{ reservation.parking_spot.location }}
+                                        </p>
+                                        {% if reservation.parking_spot.description %}
+                                            <small class="text-muted">{{ reservation.parking_spot.description }}</small>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-3">
+                                        <p class="mb-1">
+                                            <i class="fas fa-calendar me-1"></i>
+                                            {{ reservation.reservation_date.strftime('%B %d, %Y') }}
+                                        </p>
+                                        <p class="mb-1">
+                                            <i class="fas fa-clock me-1"></i>
+                                            {% if reservation.reservation_date < moment().date() %}
+                                                <span class="badge bg-secondary">Past</span>
+                                            {% elif reservation.reservation_date == moment().date() %}
+                                                <span class="badge bg-success">Today</span>
+                                            {% else %}
+                                                <span class="badge bg-primary">Upcoming</span>
+                                            {% endif %}
+                                        </p>
+                                        <small class="text-muted">
+                                            Created: {{ reservation.created_at.strftime('%m/%d/%Y') }}
+                                        </small>
+                                    </div>
+                                    <div class="col-md-3 text-end">
+                                        {% if reservation.reservation_date >= moment().date() %}
+                                            <div class="btn-group" role="group">
+                                                <a href="{{ url_for('main.edit_reservation', reservation_id=reservation.id) }}" 
+                                                   class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-edit"></i> Edit
+                                                </a>
+                                                <button type="button" 
+                                                        class="btn btn-sm btn-outline-danger cancel-btn"
+                                                        data-reservation-id="{{ reservation.id }}"
+                                                        data-reservation-name="{{ reservation.name }}">
+                                                    <i class="fas fa-trash"></i> Cancel
+                                                </button>
+                                            </div>
+                                        {% else %}
+                                            <span class="text-muted">
+                                                <i class="fas fa-check-circle"></i> Completed
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="card">
+                    <div class="card-body text-center py-5">
+                        <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+                        <h4 class="text-muted">No Reservations Found</h4>
+                        <p class="text-muted mb-4">You haven't made any parking reservations yet.</p>
+                        <a href="{{ url_for('main.new_reservation') }}" class="btn btn-primary">
+                            <i class="fas fa-plus me-1"></i>Make Your First Reservation
+                        </a>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Cancel Confirmation Modal -->
+<div class="modal fade" id="cancelModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Cancel Reservation</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to cancel the reservation for <strong id="cancelReservationName"></strong>?</p>
+                <p class="text-muted">This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Keep Reservation</button>
+                <form id="cancelForm" method="POST" style="display: inline;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash me-1"></i>Cancel Reservation
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const statusFilter = document.getElementById('statusFilter');
+    const dateFilter = document.getElementById('dateFilter');
+    const clearFiltersBtn = document.getElementById('clearFilters');
+    const reservationCards = document.querySelectorAll('.reservation-card');
+    const reservationCount = document.getElementById('reservationCount');
+
+    function filterReservations() {
+        const statusValue = statusFilter.value;
+        const dateValue = dateFilter.value;
+        let visibleCount = 0;
+
+        reservationCards.forEach(card => {
+            let showCard = true;
+
+            // Filter by status
+            if (statusValue && card.dataset.status !== statusValue) {
+                showCard = false;
+            }
+
+            // Filter by date
+            if (dateValue && card.dataset.date !== dateValue) {
+                showCard = false;
+            }
+
+            if (showCard) {
+                card.style.display = 'block';
+                visibleCount++;
+            } else {
+                card.style.display = 'none';
+            }
+        });
+
+        reservationCount.textContent = visibleCount;
+    }
+
+    // Event listeners for filters
+    statusFilter.addEventListener('change', filterReservations);
+    dateFilter.addEventListener('change', filterReservations);
+
+    clearFiltersBtn.addEventListener('click', function() {
+        statusFilter.value = '';
+        dateFilter.value = '';
+        filterReservations();
+    });
+
+    // Set today's date as default for date filter
+    const today = new Date().toISOString().split('T')[0];
+    dateFilter.max = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]; // 1 year from now
+
+    // Add event listeners for cancel buttons
+    document.querySelectorAll('.cancel-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const reservationId = this.dataset.reservationId;
+            const reservationName = this.dataset.reservationName;
+            cancelReservation(reservationId, reservationName);
+        });
+    });
+});
+
+function cancelReservation(reservationId, reservationName) {
+    document.getElementById('cancelReservationName').textContent = reservationName;
+    document.getElementById('cancelForm').action = `/reservations/${reservationId}/cancel`;
+    
+    const modal = new bootstrap.Modal(document.getElementById('cancelModal'));
+    modal.show();
+}
+</script>
+{% endblock %}

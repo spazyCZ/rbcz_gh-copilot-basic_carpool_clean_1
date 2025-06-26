@@ -1,0 +1,421 @@
+{% extends "base.html" %}
+
+{% block title %}Make Reservation - Carpool Parking{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2><i class="fas fa-calendar-plus me-2"></i>Make New Reservation</h2>
+                    <p class="text-muted mb-0">Reserve a parking spot for your visit</p>
+                </div>
+                <a href="{{ url_for('main.reservations') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-1"></i>Back to Reservations
+                </a>
+            </div>
+        </div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="row">
+        <!-- Reservation Form -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-form me-2"></i>Reservation Details
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('main.new_reservation') }}" id="reservationForm">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="mb-3">
+                            {{ form.name.label(class="form-label") }}
+                            {{ form.name(class="form-control" + (" is-invalid" if form.name.errors else "")) }}
+                            {% if form.name.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.name.errors %}
+                                        <div>{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">Name or purpose for this reservation</div>
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.reservation_date.label(class="form-label") }}
+                            {{ form.reservation_date(class="form-control" + (" is-invalid" if form.reservation_date.errors else ""), id="reservationDate") }}
+                            {% if form.reservation_date.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.reservation_date.errors %}
+                                        <div>{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.spot_id.label(class="form-label") }}
+                            {{ form.spot_id(class="form-control" + (" is-invalid" if form.spot_id.errors else ""), id="spotSelect") }}
+                            {% if form.spot_id.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.spot_id.errors %}
+                                        <div>{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">
+                                <span id="availabilityStatus"></span>
+                            </div>
+                        </div>
+
+                        <div class="d-grid">
+                            {{ form.submit(class="btn btn-primary", id="submitBtn") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Available Spots Visualization -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-parking me-2"></i>Available Parking Spots
+                    </h5>
+                    <button id="refreshSpots" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div id="parkingLayout" class="parking-layout">
+                        <!-- Parking spots will be loaded here -->
+                        <div class="text-center">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading parking spots...</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Legend -->
+                    <div class="mt-3 p-3 bg-light rounded">
+                        <h6 class="mb-2">Legend:</h6>
+                        <div class="row g-2">
+                            <div class="col-auto">
+                                <span class="parking-spot available me-2"></span>
+                                <small>Available</small>
+                            </div>
+                            <div class="col-auto">
+                                <span class="parking-spot reserved me-2"></span>
+                                <small>Reserved</small>
+                            </div>
+                            <div class="col-auto">
+                                <span class="parking-spot maintenance me-2"></span>
+                                <small>Maintenance</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Spot Information -->
+            <div class="card mt-3" id="spotInfo" style="display: none;">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i>Spot Information
+                    </h6>
+                </div>
+                <div class="card-body" id="spotDetails">
+                    <!-- Spot details will be populated here -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+.parking-layout {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+    gap: 10px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.parking-spot {
+    width: 60px;
+    height: 40px;
+    border: 2px solid;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.parking-spot.available {
+    background-color: #d4edda;
+    border-color: #28a745;
+    color: #155724;
+}
+
+.parking-spot.available:hover {
+    background-color: #c3e6cb;
+    transform: scale(1.05);
+}
+
+.parking-spot.reserved {
+    background-color: #fff3cd;
+    border-color: #ffc107;
+    color: #856404;
+    cursor: not-allowed;
+}
+
+.parking-spot.maintenance {
+    background-color: #f8d7da;
+    border-color: #dc3545;
+    color: #721c24;
+    cursor: not-allowed;
+}
+
+.parking-spot.selected {
+    background-color: #bee5eb;
+    border-color: #17a2b8;
+    color: #0c5460;
+    transform: scale(1.1);
+}
+
+.parking-spot::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 40%;
+    height: 3px;
+    background-color: currentColor;
+    border-radius: 2px;
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const reservationDate = document.getElementById('reservationDate');
+    const spotSelect = document.getElementById('spotSelect');
+    const submitBtn = document.getElementById('submitBtn');
+    const refreshBtn = document.getElementById('refreshSpots');
+    const parkingLayout = document.getElementById('parkingLayout');
+    const spotInfo = document.getElementById('spotInfo');
+    const spotDetails = document.getElementById('spotDetails');
+    const availabilityStatus = document.getElementById('availabilityStatus');
+    
+    let spotsData = [];
+    let selectedSpot = null;
+
+    // Set minimum date to today
+    const today = new Date().toISOString().split('T')[0];
+    reservationDate.min = today;
+    reservationDate.value = today;
+
+    // Load available spots
+    function loadParkingSpots() {
+        const date = reservationDate.value;
+        if (!date) return;
+
+        fetch(`/api/parking-spots?date=${date}`)
+            .then(response => response.json())
+            .then(data => {
+                spotsData = data;
+                renderParkingLayout();
+                updateSpotSelect();
+            })
+            .catch(error => {
+                console.error('Error loading parking spots:', error);
+                parkingLayout.innerHTML = '<p class="text-center text-muted">Error loading parking spots</p>';
+            });
+    }
+
+    function renderParkingLayout() {
+        if (spotsData.length === 0) {
+            parkingLayout.innerHTML = '<p class="text-center text-muted">No parking spots available</p>';
+            return;
+        }
+
+        const spotsHtml = spotsData.map(spot => `
+            <div class="parking-spot ${spot.status} ${spot.id === selectedSpot ? 'selected' : ''}"
+                 data-spot-id="${spot.id}"
+                 data-status="${spot.status}"
+                 title="${spot.location} - ${spot.description || 'No description'}">
+                ${spot.id}
+            </div>
+        `).join('');
+
+        parkingLayout.innerHTML = spotsHtml;
+
+        // Add click handlers for available spots
+        document.querySelectorAll('.parking-spot.available').forEach(spot => {
+            spot.addEventListener('click', function() {
+                selectSpot(this.dataset.spotId);
+            });
+        });
+    }
+
+    function selectSpot(spotId) {
+        selectedSpot = spotId;
+        spotSelect.value = spotId;
+        
+        // Update visual selection
+        document.querySelectorAll('.parking-spot').forEach(s => s.classList.remove('selected'));
+        document.querySelector(`[data-spot-id="${spotId}"]`).classList.add('selected');
+        
+        // Show spot information
+        const spot = spotsData.find(s => s.id === spotId);
+        if (spot) {
+            showSpotInfo(spot);
+        }
+        
+        updateAvailabilityStatus();
+    }
+
+    function showSpotInfo(spot) {
+        spotDetails.innerHTML = `
+            <div class="row">
+                <div class="col-6">
+                    <strong>Spot ID:</strong><br>
+                    <span class="badge bg-primary">${spot.id}</span>
+                </div>
+                <div class="col-6">
+                    <strong>Status:</strong><br>
+                    <span class="badge bg-${getStatusBadgeClass(spot.status)}">${spot.status.toUpperCase()}</span>
+                </div>
+            </div>
+            <hr>
+            <div class="row">
+                <div class="col-12">
+                    <strong>Location:</strong><br>
+                    <i class="fas fa-map-marker-alt me-1"></i>${spot.location}
+                </div>
+            </div>
+            ${spot.description ? `
+            <hr>
+            <div class="row">
+                <div class="col-12">
+                    <strong>Description:</strong><br>
+                    ${spot.description}
+                </div>
+            </div>
+            ` : ''}
+        `;
+        spotInfo.style.display = 'block';
+    }
+
+    function getStatusBadgeClass(status) {
+        switch(status) {
+            case 'available': return 'success';
+            case 'reserved': return 'warning';
+            case 'maintenance': return 'danger';
+            default: return 'secondary';
+        }
+    }
+
+    function updateSpotSelect() {
+        const availableSpots = spotsData.filter(spot => spot.status === 'available');
+        const currentValue = spotSelect.value;
+        
+        // Clear existing options except the first one
+        spotSelect.innerHTML = '<option value="">Select a parking spot</option>';
+        
+        availableSpots.forEach(spot => {
+            const option = document.createElement('option');
+            option.value = spot.id;
+            option.textContent = `${spot.id} - ${spot.location}`;
+            spotSelect.appendChild(option);
+        });
+        
+        // Restore selection if still available
+        if (availableSpots.find(spot => spot.id === currentValue)) {
+            spotSelect.value = currentValue;
+            selectedSpot = currentValue;
+        }
+        
+        updateAvailabilityStatus();
+    }
+
+    function updateAvailabilityStatus() {
+        const selectedSpotData = spotsData.find(spot => spot.id === spotSelect.value);
+        
+        if (!spotSelect.value) {
+            availabilityStatus.innerHTML = '<i class="fas fa-info-circle text-muted"></i> Please select a parking spot';
+            submitBtn.disabled = true;
+        } else if (selectedSpotData && selectedSpotData.status === 'available') {
+            availabilityStatus.innerHTML = '<i class="fas fa-check-circle text-success"></i> Spot is available for reservation';
+            submitBtn.disabled = false;
+        } else {
+            availabilityStatus.innerHTML = '<i class="fas fa-times-circle text-danger"></i> Spot is not available';
+            submitBtn.disabled = true;
+        }
+    }
+
+    // Event listeners
+    reservationDate.addEventListener('change', function() {
+        selectedSpot = null;
+        spotInfo.style.display = 'none';
+        loadParkingSpots();
+    });
+
+    spotSelect.addEventListener('change', function() {
+        if (this.value) {
+            selectSpot(this.value);
+        } else {
+            selectedSpot = null;
+            spotInfo.style.display = 'none';
+            document.querySelectorAll('.parking-spot').forEach(s => s.classList.remove('selected'));
+        }
+        updateAvailabilityStatus();
+    });
+
+    refreshBtn.addEventListener('click', loadParkingSpots);
+
+    // Form validation
+    document.getElementById('reservationForm').addEventListener('submit', function(e) {
+        if (!spotSelect.value) {
+            e.preventDefault();
+            alert('Please select a parking spot');
+            return false;
+        }
+        
+        if (!reservationDate.value) {
+            e.preventDefault();
+            alert('Please select a reservation date');
+            return false;
+        }
+    });
+
+    // Initial load
+    loadParkingSpots();
+});
+</script>
+{% endblock %}

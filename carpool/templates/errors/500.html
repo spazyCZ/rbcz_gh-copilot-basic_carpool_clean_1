@@ -1,0 +1,258 @@
+{% extends "base.html" %}
+
+{% block title %}Server Error{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-8 col-md-10">
+            <div class="text-center py-5">
+                <!-- Error Icon -->
+                <div class="mb-4">
+                    <i class="fas fa-exclamation-triangle fa-5x text-danger"></i>
+                </div>
+                
+                <!-- Error Message -->
+                <h1 class="display-1 fw-bold text-danger">500</h1>
+                <h2 class="mb-3">Internal Server Error</h2>
+                <p class="lead text-muted mb-4">
+                    Something went wrong on our end. We're working to fix this issue. Please try again in a few minutes.
+                </p>
+                
+                <!-- Error ID (if available) -->
+                {% if error_id %}
+                <div class="alert alert-info" role="alert">
+                    <strong>Error ID:</strong> {{ error_id }}
+                    <br>
+                    <small>Please include this ID when reporting the issue.</small>
+                </div>
+                {% endif %}
+                
+                <!-- Action Buttons -->
+                <div class="d-flex justify-content-center gap-3 flex-wrap mb-4">
+                    <button onclick="location.reload()" class="btn btn-primary">
+                        <i class="fas fa-redo"></i> Try Again
+                    </button>
+                    <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-home"></i> Go to Dashboard
+                    </a>
+                    <button onclick="history.back()" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left"></i> Go Back
+                    </button>
+                </div>
+                
+                <!-- Report Issue -->
+                <div class="card border-light shadow-sm">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0"><i class="fas fa-bug"></i> Report This Issue</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="card-text">If this problem persists, please let us know:</p>
+                        
+                        <form id="errorReportForm" class="text-start">
+                            <div class="mb-3">
+                                <label for="userEmail" class="form-label">Your Email (optional)</label>
+                                <input type="email" class="form-control" id="userEmail" 
+                                       value="{{ current_user.email if current_user.is_authenticated else '' }}"
+                                       placeholder="your.email@example.com">
+                            </div>
+                            <div class="mb-3">
+                                <label for="errorDescription" class="form-label">What were you trying to do?</label>
+                                <textarea class="form-control" id="errorDescription" rows="3" 
+                                          placeholder="Describe what you were doing when this error occurred..."></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label for="browserInfo" class="form-label">Browser Information</label>
+                                <input type="text" class="form-control" id="browserInfo" readonly>
+                            </div>
+                            <button type="submit" class="btn btn-warning">
+                                <i class="fas fa-paper-plane"></i> Send Report
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                
+                <!-- Status Information -->
+                <div class="mt-4">
+                    <div class="row text-center">
+                        <div class="col-md-4 mb-3">
+                            <div class="card border-0">
+                                <div class="card-body">
+                                    <div class="status-indicator bg-success rounded-circle mx-auto mb-2"></div>
+                                    <h6 class="card-title">Database</h6>
+                                    <small class="text-muted">Operational</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="card border-0">
+                                <div class="card-body">
+                                    <div class="status-indicator bg-warning rounded-circle mx-auto mb-2"></div>
+                                    <h6 class="card-title">Application</h6>
+                                    <small class="text-muted">Issues Detected</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="card border-0">
+                                <div class="card-body">
+                                    <div class="status-indicator bg-success rounded-circle mx-auto mb-2"></div>
+                                    <h6 class="card-title">Authentication</h6>
+                                    <small class="text-muted">Operational</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Contact Information -->
+                <div class="mt-4 p-3 bg-light rounded">
+                    <h6>Need Immediate Help?</h6>
+                    <p class="mb-2">
+                        <i class="fas fa-envelope"></i> 
+                        <a href="mailto:support@carpool.local">support@carpool.local</a>
+                    </p>
+                    <p class="mb-0">
+                        <i class="fas fa-clock"></i> 
+                        <small class="text-muted">We typically respond within 2 hours during business hours</small>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.display-1 {
+    font-size: 6rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.status-indicator {
+    width: 12px;
+    height: 12px;
+    display: inline-block;
+}
+
+.card {
+    transition: transform 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+}
+
+.alert {
+    max-width: 400px;
+    margin: 0 auto 2rem;
+}
+
+@media (max-width: 768px) {
+    .display-1 {
+        font-size: 4rem;
+    }
+    
+    .fa-5x {
+        font-size: 3em !important;
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Populate browser information
+    const browserInfo = document.getElementById('browserInfo');
+    browserInfo.value = `${navigator.userAgent} | Screen: ${screen.width}x${screen.height} | Viewport: ${window.innerWidth}x${window.innerHeight}`;
+    
+    // Handle error report form
+    document.getElementById('errorReportForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = {
+            email: document.getElementById('userEmail').value,
+            description: document.getElementById('errorDescription').value,
+            browser_info: document.getElementById('browserInfo').value,
+            url: window.location.href,
+            timestamp: new Date().toISOString(),
+            user_agent: navigator.userAgent,
+            error_id: '{{ error_id if error_id else "N/A" }}'
+        };
+        
+        // Send error report
+        fetch('/api/error-report', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrf_token]')?.value || ''
+            },
+            body: JSON.stringify(formData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showAlert('Thank you! Your error report has been sent successfully.', 'success');
+                document.getElementById('errorReportForm').reset();
+                browserInfo.value = `${navigator.userAgent} | Screen: ${screen.width}x${screen.height} | Viewport: ${window.innerWidth}x${window.innerHeight}`;
+            } else {
+                showAlert('Sorry, there was an error sending your report. Please try emailing us directly.', 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error sending report:', error);
+            showAlert('Sorry, there was an error sending your report. Please try emailing us directly.', 'danger');
+        });
+    });
+    
+    // Auto-refresh every 30 seconds to check if the issue is resolved
+    let refreshAttempts = 0;
+    const maxRefreshAttempts = 10;
+    
+    function checkServerStatus() {
+        if (refreshAttempts >= maxRefreshAttempts) {
+            return;
+        }
+        
+        refreshAttempts++;
+        
+        fetch('/api/health-check', {
+            method: 'GET',
+            cache: 'no-cache'
+        })
+        .then(response => {
+            if (response.ok) {
+                showAlert('Server is back online! Redirecting to dashboard...', 'success');
+                setTimeout(() => {
+                    window.location.href = '{{ url_for("main.dashboard") }}';
+                }, 2000);
+            }
+        })
+        .catch(error => {
+            // Server still down, continue checking
+            setTimeout(checkServerStatus, 30000);
+        });
+    }
+    
+    // Start checking after 30 seconds
+    setTimeout(checkServerStatus, 30000);
+    
+    // Add retry button functionality
+    function addRetryButton() {
+        const retryBtn = document.createElement('button');
+        retryBtn.className = 'btn btn-outline-info btn-sm mt-2';
+        retryBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Check Server Status';
+        retryBtn.onclick = checkServerStatus;
+        
+        const statusSection = document.querySelector('.mt-4 .row.text-center').parentElement;
+        statusSection.appendChild(retryBtn);
+    }
+    
+    // Add retry button after initial load
+    setTimeout(addRetryButton, 5000);
+});
+</script>
+{% endblock %}

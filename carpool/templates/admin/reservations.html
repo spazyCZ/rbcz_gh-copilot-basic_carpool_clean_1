@@ -1,0 +1,216 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Reservations - Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2><i class="fas fa-calendar-check me-2"></i>Manage Reservations</h2>
+                    <p class="text-muted mb-0">View and manage all parking reservations</p>
+                </div>
+                <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- Reservations Table -->
+    <div class="card">
+        <div class="card-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-list me-2"></i>All Reservations
+                    <span class="badge bg-primary ms-2">{{ reservations|length }}</span>
+                </h5>
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-outline-primary btn-sm" id="refreshTable">
+                        <i class="fas fa-sync-alt me-1"></i>Refresh
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" id="exportReservations">
+                        <i class="fas fa-download me-1"></i>Export
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            {% if reservations %}
+            <div class="table-responsive">
+                <table class="table table-striped table-hover" id="reservationsTable">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>ID</th>
+                            <th>User</th>
+                            <th>Name</th>
+                            <th>Spot</th>
+                            <th>Date</th>
+                            <th>Status</th>
+                            <th>Created</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for reservation in reservations %}
+                        <tr data-reservation-id="{{ reservation.id }}">
+                            <td>{{ reservation.id }}</td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-circle me-2">
+                                        {{ reservation.user.username[0].upper() }}
+                                    </div>
+                                    <div>
+                                        <strong>{{ reservation.user.username }}</strong>
+                                        <br><small class="text-muted">{{ reservation.user.email }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>{{ reservation.name }}</td>
+                            <td>
+                                <span class="badge bg-info">Spot {{ reservation.spot_id }}</span>
+                            </td>
+                            <td>{{ reservation.reservation_date.strftime('%Y-%m-%d') }}</td>
+                            <td>
+                                {% if reservation.is_cancelled %}
+                                    <span class="badge bg-danger">Cancelled</span>
+                                {% elif reservation.reservation_date < date.today() %}
+                                    <span class="badge bg-secondary">Past</span>
+                                {% elif reservation.reservation_date == date.today() %}
+                                    <span class="badge bg-success">Today</span>
+                                {% else %}
+                                    <span class="badge bg-primary">Upcoming</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ reservation.created_at.strftime('%Y-%m-%d %H:%M') if reservation.created_at else 'N/A' }}</td>
+                            <td>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <button type="button" class="btn btn-outline-primary" 
+                                            data-bs-toggle="modal" data-bs-target="#viewReservationModal"
+                                            data-reservation-id="{{ reservation.id }}">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    {% if not reservation.is_cancelled %}
+                                    <button type="button" class="btn btn-outline-warning"
+                                            data-bs-toggle="modal" data-bs-target="#editReservationModal"
+                                            data-reservation-id="{{ reservation.id }}">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-outline-danger"
+                                            onclick="cancelReservation({{ reservation.id }}, '{{ reservation.name }}')">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No Reservations Found</h5>
+                <p class="text-muted">There are no reservations in the system yet.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- View Reservation Modal -->
+<div class="modal fade" id="viewReservationModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Reservation Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="reservationDetailsContent">
+                <!-- Content loaded via AJAX -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Reservation Modal -->
+<div class="modal fade" id="editReservationModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Reservation</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="editReservationContent">
+                <!-- Content loaded via AJAX -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.avatar-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #007bff;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 1rem;
+}
+</style>
+
+<script>
+function cancelReservation(reservationId, reservationName) {
+    if (confirm(`Are you sure you want to cancel the reservation "${reservationName}"?`)) {
+        fetch(`/admin/reservations/${reservationId}/cancel`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error cancelling reservation: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while cancelling the reservation.');
+        });
+    }
+}
+
+document.getElementById('refreshTable').addEventListener('click', function() {
+    location.reload();
+});
+
+document.getElementById('exportReservations').addEventListener('click', function() {
+    window.location.href = '/admin/reservations/export';
+});
+</script>
+{% endblock %}

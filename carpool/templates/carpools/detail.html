@@ -1,0 +1,232 @@
+{% extends "base.html" %}
+
+{% block title %}{{ carpool.name }} - Carpool Details{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2><i class="fas fa-users me-2"></i>{{ carpool.name }}</h2>
+                    <p class="text-muted mb-0">Carpool Details and Information</p>
+                </div>
+                <a href="{{ url_for('main.carpools') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-1"></i>Back to Carpools
+                </a>
+            </div>
+        </div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="row">
+        <!-- Carpool Information -->
+        <div class="col-md-8 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i>Trip Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <strong><i class="fas fa-route me-2"></i>Route:</strong>
+                                <div class="mt-1">
+                                    <span class="badge bg-primary">{{ carpool.origin }}</span>
+                                    <i class="fas fa-arrow-right mx-2"></i>
+                                    <span class="badge bg-success">{{ carpool.destination }}</span>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <strong><i class="fas fa-clock me-2"></i>Departure:</strong>
+                                <div class="mt-1">{{ carpool.departure_time.strftime('%A, %B %d, %Y at %I:%M %p') }}</div>
+                            </div>
+                            {% if carpool.return_time %}
+                            <div class="mb-3">
+                                <strong><i class="fas fa-clock me-2"></i>Return:</strong>
+                                <div class="mt-1">{{ carpool.return_time.strftime('%A, %B %d, %Y at %I:%M %p') }}</div>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <strong><i class="fas fa-user me-2"></i>Organizer:</strong>
+                                <div class="mt-1">{{ carpool.organizer.username }}</div>
+                            </div>
+                            <div class="mb-3">
+                                <strong><i class="fas fa-users me-2"></i>Capacity:</strong>
+                                <div class="mt-1">
+                                    {{ carpool.current_passengers }}/{{ carpool.max_passengers }} passengers
+                                    <div class="progress mt-1" style="height: 8px;">
+                                        <div class="progress-bar" role="progressbar" 
+                                             style="width: {{ (carpool.current_passengers / carpool.max_passengers * 100) if carpool.max_passengers > 0 else 0 }}%">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <strong><i class="fas fa-calendar-plus me-2"></i>Created:</strong>
+                                <div class="mt-1">{{ carpool.created_at.strftime('%m/%d/%Y') if carpool.created_at else 'Unknown' }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if carpool.notes %}
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="mb-0">
+                                <strong><i class="fas fa-sticky-note me-2"></i>Notes:</strong>
+                                <div class="mt-2 p-3 bg-light rounded">{{ carpool.notes }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions Panel -->
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-cogs me-2"></i>Actions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if current_user.id == carpool.organizer_id %}
+                        <!-- Organizer Actions -->
+                        <div class="alert alert-info" role="alert">
+                            <i class="fas fa-crown me-2"></i>You are the organizer of this carpool.
+                        </div>
+                        <div class="d-grid gap-2">
+                            <a href="#" class="btn btn-outline-primary">
+                                <i class="fas fa-edit me-2"></i>Edit Carpool
+                            </a>
+                            <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#cancelCarpoolModal">
+                                <i class="fas fa-times me-2"></i>Cancel Carpool
+                            </button>
+                        </div>
+                    {% elif carpool.current_passengers >= carpool.max_passengers %}
+                        <!-- Full Carpool -->
+                        <div class="alert alert-warning" role="alert">
+                            <i class="fas fa-exclamation-triangle me-2"></i>This carpool is full.
+                        </div>
+                    {% else %}
+                        <!-- User Actions -->
+                        {% if current_user in carpool.passengers %}
+                        <div class="alert alert-success" role="alert">
+                            <i class="fas fa-check me-2"></i>You have joined this carpool.
+                        </div>
+                        <form method="POST" action="{{ url_for('main.leave_carpool', carpool_id=carpool.id) }}">
+                            {{ leave_form.hidden_tag() }}
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-outline-warning" 
+                                        onclick="return confirm('Are you sure you want to leave this carpool?')">
+                                    <i class="fas fa-sign-out-alt me-2"></i>Leave Carpool
+                                </button>
+                            </div>
+                        </form>
+                        {% else %}
+                        <div class="alert alert-light" role="alert">
+                            <i class="fas fa-info-circle me-2"></i>Join this carpool to reserve your spot.
+                        </div>
+                        <form method="POST" action="{{ url_for('main.join_carpool', carpool_id=carpool.id) }}">
+                            {{ join_form.hidden_tag() }}
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-plus me-2"></i>Join Carpool
+                                </button>
+                            </div>
+                        </form>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Passenger List -->
+            {% if carpool.passengers %}
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-users me-2"></i>Passengers ({{ carpool.passengers|length }})
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        {% for passenger in carpool.passengers %}
+                        <div class="list-group-item px-0 py-2">
+                            <div class="d-flex align-items-center">
+                                <div class="avatar-circle me-3">
+                                    {{ passenger.username[0].upper() }}
+                                </div>
+                                <div>
+                                    <strong>{{ passenger.username }}</strong>
+                                    {% if passenger.id == carpool.organizer_id %}
+                                    <span class="badge bg-primary ms-2">Organizer</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Cancel Carpool Modal (for organizers) -->
+{% if current_user.id == carpool.organizer_id %}
+<div class="modal fade" id="cancelCarpoolModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Cancel Carpool</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to cancel this carpool?</p>
+                <p class="text-muted">This action cannot be undone and all passengers will be notified.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Keep Carpool</button>
+                <form method="POST" action="{{ url_for('main.cancel_carpool', carpool_id=carpool.id) }}" class="d-inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <button type="submit" class="btn btn-danger">Cancel Carpool</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<style>
+.avatar-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #007bff;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+</style>
+{% endblock %}

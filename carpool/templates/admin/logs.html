@@ -1,0 +1,666 @@
+{% extends "base.html" %}
+
+{% block title %}Activity Logs - Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2><i class="fas fa-history"></i> Activity Logs</h2>
+                    <p class="text-muted">Monitor system activity and user actions</p>
+                </div>
+                <div>
+                    <button type="button" class="btn btn-outline-secondary" id="refreshLogs">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                    <button type="button" class="btn btn-outline-danger" id="clearOldLogs">
+                        <i class="fas fa-trash"></i> Clear Old Logs
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-0">{{ stats.total_actions }}</h4>
+                            <small>Total Actions</small>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-list fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-0">{{ stats.actions_today }}</h4>
+                            <small>Today</small>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-calendar-day fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-0">{{ stats.unique_users }}</h4>
+                            <small>Active Users</small>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-users fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-0">{{ stats.actions_this_hour }}</h4>
+                            <small>This Hour</small>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-clock fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Activity Chart -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-chart-line"></i> Activity Over Time</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="activityChart" width="400" height="100"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters and Search -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-filter"></i> Filters</h5>
+                </div>
+                <div class="card-body">
+                    <form id="logFilters" class="row g-3">
+                        <div class="col-md-3">
+                            <label for="actionTypeFilter" class="form-label">Action Type</label>
+                            <select class="form-select" id="actionTypeFilter" name="action_type">
+                                <option value="">All Types</option>
+                                <option value="login">Login</option>
+                                <option value="logout">Logout</option>
+                                <option value="create_reservation">Create Reservation</option>
+                                <option value="cancel_reservation">Cancel Reservation</option>
+                                <option value="create_carpool">Create Carpool</option>
+                                <option value="join_carpool">Join Carpool</option>
+                                <option value="admin_action">Admin Action</option>
+                                <option value="user_created">User Created</option>
+                                <option value="user_updated">User Updated</option>
+                                <option value="parking_spot_created">Parking Spot Created</option>
+                                <option value="parking_spot_updated">Parking Spot Updated</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="usernameFilter" class="form-label">Username</label>
+                            <input type="text" class="form-control" id="usernameFilter" name="username" placeholder="Search by username">
+                        </div>
+                        <div class="col-md-2">
+                            <label for="dateFromFilter" class="form-label">From Date</label>
+                            <input type="date" class="form-control" id="dateFromFilter" name="date_from">
+                        </div>
+                        <div class="col-md-2">
+                            <label for="dateToFilter" class="form-label">To Date</label>
+                            <input type="date" class="form-control" id="dateToFilter" name="date_to">
+                        </div>
+                        <div class="col-md-2">
+                            <label for="limitFilter" class="form-label">Results</label>
+                            <select class="form-select" id="limitFilter" name="limit">
+                                <option value="50">50</option>
+                                <option value="100" selected>100</option>
+                                <option value="250">250</option>
+                                <option value="500">500</option>
+                            </select>
+                        </div>
+                    </form>
+                    <div class="mt-3">
+                        <button type="button" class="btn btn-primary" id="applyFilters">
+                            <i class="fas fa-search"></i> Apply Filters
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary" id="clearFilters">
+                            <i class="fas fa-times"></i> Clear Filters
+                        </button>
+                        <button type="button" class="btn btn-outline-success" id="exportLogs">
+                            <i class="fas fa-download"></i> Export CSV
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Logs Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="fas fa-list-ul"></i> Activity Log</h5>
+                        <div class="text-muted">
+                            <small>Showing <span id="resultsCount">{{ actions|length }}</span> results</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover" id="logsTable">
+                            <thead>
+                                <tr>
+                                    <th>Timestamp</th>
+                                    <th>User</th>
+                                    <th>Action Type</th>
+                                    <th>Details</th>
+                                    <th>IP Address</th>
+                                    <th>User Agent</th>
+                                </tr>
+                            </thead>
+                            <tbody id="logsTableBody">
+                                {% for action in actions %}
+                                <tr>
+                                    <td>
+                                        <div class="timestamp-cell">
+                                            <div class="fw-bold">{{ action.timestamp.strftime('%Y-%m-%d') }}</div>
+                                            <small class="text-muted">{{ action.timestamp.strftime('%H:%M:%S') }}</small>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar-sm me-2">
+                                                <span class="avatar-title bg-primary rounded-circle">
+                                                    {{ action.username[0].upper() if action.username else '?' }}
+                                                </span>
+                                            </div>
+                                            <strong>{{ action.username or 'System' }}</strong>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge 
+                                            {% if action.action_type in ['login', 'register'] %}bg-success
+                                            {% elif action.action_type in ['logout', 'cancel_reservation'] %}bg-warning
+                                            {% elif action.action_type in ['admin_action', 'delete'] %}bg-danger
+                                            {% elif action.action_type in ['create_reservation', 'create_carpool'] %}bg-primary
+                                            {% else %}bg-secondary{% endif %}">
+                                            {{ action.action_type.replace('_', ' ').title() }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="details-cell">
+                                            {{ action.details|truncate(80) if action.details else '-' }}
+                                            {% if action.details and action.details|length > 80 %}
+                                            <button type="button" class="btn btn-link btn-sm p-0 ms-1" 
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#detailsModal"
+                                                    data-details="{{ action.details }}"
+                                                    data-action-type="{{ action.action_type }}"
+                                                    data-timestamp="{{ action.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}"
+                                                    data-username="{{ action.username }}">
+                                                <i class="fas fa-expand-alt"></i>
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <code class="small">{{ action.ip_address or 'N/A' }}</code>
+                                    </td>
+                                    <td>
+                                        <div class="user-agent-cell">
+                                            <small class="text-muted">{{ action.user_agent|truncate(50) if action.user_agent else 'N/A' }}</small>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Pagination -->
+                    <div class="d-flex justify-content-between align-items-center mt-3">
+                        <div class="text-muted">
+                            <small>Total actions: {{ total_actions }}</small>
+                        </div>
+                        <nav>
+                            <ul class="pagination pagination-sm mb-0" id="logsPagination">
+                                <!-- Pagination will be generated by JavaScript -->
+                            </ul>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Details Modal -->
+<div class="modal fade" id="detailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-info-circle"></i> Action Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <dl class="row">
+                    <dt class="col-sm-3">Timestamp:</dt>
+                    <dd class="col-sm-9" id="modalTimestamp"></dd>
+                    
+                    <dt class="col-sm-3">User:</dt>
+                    <dd class="col-sm-9" id="modalUsername"></dd>
+                    
+                    <dt class="col-sm-3">Action Type:</dt>
+                    <dd class="col-sm-9" id="modalActionType"></dd>
+                    
+                    <dt class="col-sm-3">Details:</dt>
+                    <dd class="col-sm-9">
+                        <pre class="bg-light p-3 rounded" id="modalDetails"></pre>
+                    </dd>
+                </dl>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Clear Logs Confirmation Modal -->
+<div class="modal fade" id="clearLogsModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-exclamation-triangle text-warning"></i> Clear Old Logs</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>This will delete all logs older than 30 days. This action cannot be undone.</p>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="confirmClearLogs">
+                    <label class="form-check-label" for="confirmClearLogs">
+                        I understand this action cannot be undone
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmClearLogsBtn" disabled>Clear Old Logs</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.timestamp-cell {
+    min-width: 120px;
+}
+
+.details-cell {
+    max-width: 300px;
+    word-wrap: break-word;
+}
+
+.user-agent-cell {
+    max-width: 200px;
+}
+
+.avatar-sm {
+    width: 2rem;
+    height: 2rem;
+}
+
+.avatar-title {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    font-weight: 600;
+    font-size: 0.875rem;
+}
+
+.table th {
+    border-top: none;
+    font-weight: 600;
+    color: #6c757d;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+}
+
+pre {
+    font-size: 0.875rem;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.pagination-sm .page-link {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let currentPage = 1;
+    let currentFilters = {};
+
+    // Initialize activity chart
+    initActivityChart();
+
+    // Filter functionality
+    document.getElementById('applyFilters').addEventListener('click', function() {
+        currentPage = 1;
+        applyFilters();
+    });
+
+    document.getElementById('clearFilters').addEventListener('click', function() {
+        document.getElementById('logFilters').reset();
+        currentPage = 1;
+        applyFilters();
+    });
+
+    // Refresh logs
+    document.getElementById('refreshLogs').addEventListener('click', function() {
+        applyFilters();
+    });
+
+    // Export logs
+    document.getElementById('exportLogs').addEventListener('click', function() {
+        const params = new URLSearchParams(currentFilters);
+        window.open(`/admin/api/logs/export?${params.toString()}`, '_blank');
+    });
+
+    // Clear old logs
+    document.getElementById('clearOldLogs').addEventListener('click', function() {
+        new bootstrap.Modal(document.getElementById('clearLogsModal')).show();
+    });
+
+    document.getElementById('confirmClearLogs').addEventListener('change', function() {
+        document.getElementById('confirmClearLogsBtn').disabled = !this.checked;
+    });
+
+    document.getElementById('confirmClearLogsBtn').addEventListener('click', function() {
+        fetch('/admin/api/logs/clear-old', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrf_token]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                bootstrap.Modal.getInstance(document.getElementById('clearLogsModal')).hide();
+                showAlert(`Cleared ${data.deleted_count} old log entries`, 'success');
+                applyFilters();
+            } else {
+                showAlert(data.message || 'Error clearing logs', 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error clearing logs:', error);
+            showAlert('Error clearing logs', 'danger');
+        });
+    });
+
+    // Details modal
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('[data-bs-target="#detailsModal"]')) {
+            const btn = e.target.closest('[data-bs-target="#detailsModal"]');
+            document.getElementById('modalTimestamp').textContent = btn.dataset.timestamp;
+            document.getElementById('modalUsername').textContent = btn.dataset.username;
+            document.getElementById('modalActionType').textContent = btn.dataset.actionType.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+            document.getElementById('modalDetails').textContent = btn.dataset.details;
+        }
+    });
+
+    function applyFilters() {
+        const formData = new FormData(document.getElementById('logFilters'));
+        currentFilters = Object.fromEntries(formData.entries());
+        currentFilters.page = currentPage;
+
+        // Show loading state
+        document.getElementById('logsTableBody').innerHTML = '<tr><td colspan="6" class="text-center"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>';
+
+        fetch('/admin/api/logs', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrf_token]').value
+            },
+            body: JSON.stringify(currentFilters)
+        })
+        .then(response => response.json())
+        .then(data => {
+            updateLogsTable(data.actions);
+            updatePagination(data.pagination);
+            document.getElementById('resultsCount').textContent = data.pagination.total;
+        })
+        .catch(error => {
+            console.error('Error fetching logs:', error);
+            document.getElementById('logsTableBody').innerHTML = '<tr><td colspan="6" class="text-center text-danger">Error loading logs</td></tr>';
+        });
+    }
+
+    function updateLogsTable(actions) {
+        const tbody = document.getElementById('logsTableBody');
+        tbody.innerHTML = '';
+
+        if (actions.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No logs found</td></tr>';
+            return;
+        }
+
+        actions.forEach(action => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>
+                    <div class="timestamp-cell">
+                        <div class="fw-bold">${formatDate(action.timestamp)}</div>
+                        <small class="text-muted">${formatTime(action.timestamp)}</small>
+                    </div>
+                </td>
+                <td>
+                    <div class="d-flex align-items-center">
+                        <div class="avatar-sm me-2">
+                            <span class="avatar-title bg-primary rounded-circle">
+                                ${action.username ? action.username[0].toUpperCase() : '?'}
+                            </span>
+                        </div>
+                        <strong>${action.username || 'System'}</strong>
+                    </div>
+                </td>
+                <td>
+                    <span class="badge ${getActionBadgeClass(action.action_type)}">
+                        ${action.action_type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                    </span>
+                </td>
+                <td>
+                    <div class="details-cell">
+                        ${action.details ? truncateText(action.details, 80) : '-'}
+                        ${action.details && action.details.length > 80 ? `
+                            <button type="button" class="btn btn-link btn-sm p-0 ms-1" 
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#detailsModal"
+                                    data-details="${escapeHtml(action.details)}"
+                                    data-action-type="${action.action_type}"
+                                    data-timestamp="${formatDateTime(action.timestamp)}"
+                                    data-username="${action.username || 'System'}">
+                                <i class="fas fa-expand-alt"></i>
+                            </button>
+                        ` : ''}
+                    </div>
+                </td>
+                <td>
+                    <code class="small">${action.ip_address || 'N/A'}</code>
+                </td>
+                <td>
+                    <div class="user-agent-cell">
+                        <small class="text-muted">${action.user_agent ? truncateText(action.user_agent, 50) : 'N/A'}</small>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(row);
+        });
+    }
+
+    function updatePagination(pagination) {
+        const container = document.getElementById('logsPagination');
+        container.innerHTML = '';
+
+        if (pagination.pages <= 1) return;
+
+        // Previous button
+        const prevLi = document.createElement('li');
+        prevLi.className = `page-item ${pagination.current_page === 1 ? 'disabled' : ''}`;
+        prevLi.innerHTML = `<a class="page-link" href="#" data-page="${pagination.current_page - 1}">Previous</a>`;
+        container.appendChild(prevLi);
+
+        // Page numbers
+        for (let i = Math.max(1, pagination.current_page - 2); i <= Math.min(pagination.pages, pagination.current_page + 2); i++) {
+            const li = document.createElement('li');
+            li.className = `page-item ${i === pagination.current_page ? 'active' : ''}`;
+            li.innerHTML = `<a class="page-link" href="#" data-page="${i}">${i}</a>`;
+            container.appendChild(li);
+        }
+
+        // Next button
+        const nextLi = document.createElement('li');
+        nextLi.className = `page-item ${pagination.current_page === pagination.pages ? 'disabled' : ''}`;
+        nextLi.innerHTML = `<a class="page-link" href="#" data-page="${pagination.current_page + 1}">Next</a>`;
+        container.appendChild(nextLi);
+
+        // Add click handlers
+        container.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (e.target.tagName === 'A' && !e.target.closest('.disabled')) {
+                currentPage = parseInt(e.target.dataset.page);
+                applyFilters();
+            }
+        });
+    }
+
+    function initActivityChart() {
+        const ctx = document.getElementById('activityChart').getContext('2d');
+        
+        fetch('/admin/api/logs/activity-chart')
+            .then(response => response.json())
+            .then(data => {
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: data.labels,
+                        datasets: [{
+                            label: 'Actions per Hour',
+                            data: data.data,
+                            borderColor: '#007bff',
+                            backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    stepSize: 1
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        }
+                    }
+                });
+            })
+            .catch(error => {
+                console.error('Error loading activity chart:', error);
+            });
+    }
+
+    // Utility functions
+    function formatDate(dateString) {
+        return new Date(dateString).toLocaleDateString();
+    }
+
+    function formatTime(dateString) {
+        return new Date(dateString).toLocaleTimeString();
+    }
+
+    function formatDateTime(dateString) {
+        return new Date(dateString).toLocaleString();
+    }
+
+    function truncateText(text, length) {
+        return text.length > length ? text.substring(0, length) + '...' : text;
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function getActionBadgeClass(actionType) {
+        const typeMap = {
+            'login': 'bg-success',
+            'register': 'bg-success',
+            'logout': 'bg-warning',
+            'cancel_reservation': 'bg-warning',
+            'admin_action': 'bg-danger',
+            'delete': 'bg-danger',
+            'create_reservation': 'bg-primary',
+            'create_carpool': 'bg-primary'
+        };
+        return typeMap[actionType] || 'bg-secondary';
+    }
+
+    // Initial load
+    applyFilters();
+});
+</script>
+{% endblock %}

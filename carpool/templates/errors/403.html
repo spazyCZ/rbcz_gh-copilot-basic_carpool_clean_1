@@ -1,0 +1,291 @@
+{% extends "base.html" %}
+
+{% block title %}Access Forbidden{% endblock %}
+
+{% block content %}
+<div class="container" data-is-authenticated="{{ current_user.is_authenticated|lower }}">
+    <div class="row justify-content-center">
+        <div class="col-lg-8 col-md-10">
+            <div class="text-center py-5">
+                <!-- Error Icon -->
+                <div class="mb-4">
+                    <i class="fas fa-shield-alt fa-5x text-warning"></i>
+                </div>
+                
+                <!-- Error Message -->
+                <h1 class="display-1 fw-bold text-warning">403</h1>
+                <h2 class="mb-3">Access Forbidden</h2>
+                <p class="lead text-muted mb-4">
+                    You don't have permission to access this resource. This might be because you need to log in with different credentials or your account doesn't have the required privileges.
+                </p>
+                
+                <!-- Current User Info -->
+                {% if current_user.is_authenticated %}
+                <div class="alert alert-info" role="alert">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-user-circle fa-2x me-3"></i>
+                        <div class="text-start">
+                            <strong>Currently logged in as:</strong> {{ current_user.username }}<br>
+                            <small>Role: {{ current_user.role.title() }}</small>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="alert alert-warning" role="alert">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <strong>Not logged in.</strong> You may need to log in to access this resource.
+                </div>
+                {% endif %}
+                
+                <!-- Action Buttons -->
+                <div class="d-flex justify-content-center gap-3 flex-wrap mb-4">
+                    {% if not current_user.is_authenticated %}
+                    <a href="{{ url_for('auth.login') }}" class="btn btn-primary">
+                        <i class="fas fa-sign-in-alt"></i> Log In
+                    </a>
+                    {% else %}
+                    <a href="{{ url_for('auth.logout') }}" class="btn btn-warning">
+                        <i class="fas fa-sign-out-alt"></i> Log Out & Try Different Account
+                    </a>
+                    {% endif %}
+                    
+                    <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-home"></i> Go to Dashboard
+                    </a>
+                    <button onclick="history.back()" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left"></i> Go Back
+                    </button>
+                </div>
+                
+                <!-- Permission Requirements -->
+                <div class="card border-warning shadow-sm">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0"><i class="fas fa-key"></i> Access Requirements</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="card-text">This resource requires one of the following:</p>
+                        
+                        <div class="row text-center">
+                            <div class="col-md-4 mb-3">
+                                <div class="border rounded p-3 h-100">
+                                    <i class="fas fa-user-shield fa-2x text-danger mb-2"></i>
+                                    <h6>Administrator</h6>
+                                    <small class="text-muted">Full system access for management tasks</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <div class="border rounded p-3 h-100">
+                                    <i class="fas fa-user fa-2x text-primary mb-2"></i>
+                                    <h6>Regular User</h6>
+                                    <small class="text-muted">Standard user account with basic privileges</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <div class="border rounded p-3 h-100">
+                                    <i class="fas fa-user-cog fa-2x text-info mb-2"></i>
+                                    <h6>Resource Owner</h6>
+                                    <small class="text-muted">Owner or creator of the specific resource</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Available Actions -->
+                <div class="mt-5">
+                    <h5 class="text-muted mb-3">What You Can Do</h5>
+                    <div class="row">
+                        {% if current_user.is_authenticated %}
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100 border-0 shadow-sm">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-calendar-plus fa-2x text-primary mb-2"></i>
+                                    <h6 class="card-title">Make Reservation</h6>
+                                    <p class="card-text small text-muted">Book available parking spots</p>
+                                    <a href="{{ url_for('main.new_reservation') }}" class="btn btn-sm btn-primary">Go</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100 border-0 shadow-sm">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-list fa-2x text-success mb-2"></i>
+                                    <h6 class="card-title">My Reservations</h6>
+                                    <p class="card-text small text-muted">View and manage your bookings</p>
+                                    <a href="{{ url_for('main.reservations') }}" class="btn btn-sm btn-success">Go</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100 border-0 shadow-sm">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-car fa-2x text-info mb-2"></i>
+                                    <h6 class="card-title">Carpools</h6>
+                                    <p class="card-text small text-muted">Join or organize carpools</p>
+                                    <a href="{{ url_for('main.carpools') }}" class="btn btn-sm btn-info">Go</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100 border-0 shadow-sm">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-user-edit fa-2x text-warning mb-2"></i>
+                                    <h6 class="card-title">Profile</h6>
+                                    <p class="card-text small text-muted">Update your account settings</p>
+                                    <a href="{{ url_for('main.profile') }}" class="btn btn-sm btn-warning">Go</a>
+                                </div>
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100 border-0 shadow-sm">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-sign-in-alt fa-2x text-primary mb-2"></i>
+                                    <h6 class="card-title">Log In</h6>
+                                    <p class="card-text small text-muted">Access your existing account</p>
+                                    <a href="{{ url_for('auth.login') }}" class="btn btn-sm btn-primary">Go</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100 border-0 shadow-sm">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-user-plus fa-2x text-success mb-2"></i>
+                                    <h6 class="card-title">Register</h6>
+                                    <p class="card-text small text-muted">Create a new account</p>
+                                    <a href="{{ url_for('auth.register') }}" class="btn btn-sm btn-success">Go</a>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Contact for Access -->
+                <div class="mt-4 p-3 bg-light rounded">
+                    <h6><i class="fas fa-envelope"></i> Need Higher Access?</h6>
+                    <p class="mb-2">
+                        If you believe you should have access to this resource, please contact your administrator:
+                    </p>
+                    <p class="mb-0">
+                        <a href="mailto:admin@carpool.local?subject=Access Request&body=I need access to: {{ request.url }}" 
+                           class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-paper-plane"></i> Request Access
+                        </a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.display-1 {
+    font-size: 6rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.card {
+    transition: transform 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+}
+
+.alert {
+    max-width: 400px;
+    margin: 0 auto 2rem;
+}
+
+.border {
+    border-color: #dee2e6 !important;
+}
+
+.border:hover {
+    border-color: #adb5bd !important;
+    background-color: #f8f9fa;
+}
+
+@media (max-width: 768px) {
+    .display-1 {
+        font-size: 4rem;
+    }
+    
+    .fa-5x {
+        font-size: 3em !important;
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if user has navigated here by mistake and suggest login
+    const urlParams = new URLSearchParams(window.location.search);
+    const from = urlParams.get('from');
+    const isAuthenticated = document.querySelector('.container').dataset.isAuthenticated === 'true';
+    
+    if (from && !isAuthenticated) {
+        // Show a more specific message about logging in
+        const loginSuggestion = document.createElement('div');
+        loginSuggestion.className = 'alert alert-info mt-3';
+        loginSuggestion.innerHTML = `
+            <i class="fas fa-lightbulb"></i>
+            <strong>Tip:</strong> Try logging in to access "${decodeURIComponent(from)}".
+            <a href="{{ url_for('auth.login') }}?next=${encodeURIComponent(from)}" class="btn btn-sm btn-primary ms-2">
+                Log In Now
+            </a>
+        `;
+        
+        const warningAlert = document.querySelector('.alert-warning');
+        if (warningAlert) {
+            warningAlert.after(loginSuggestion);
+        }
+    }
+    
+    // Auto-refresh access check for logged-in users
+    if (isAuthenticated) {
+        function checkAccess() {
+            fetch(window.location.href, {
+                method: 'HEAD',
+                cache: 'no-cache'
+            })
+            .then(response => {
+                if (response.ok) {
+                    // Access granted, refresh the page
+                    window.location.reload();
+                }
+            })
+            .catch(error => {
+                console.log('Access check failed:', error);
+            });
+        }
+        
+        // Check access every 30 seconds
+        setInterval(checkAccess, 30000);
+    }
+    
+    // Track attempted resource access for analytics
+    fetch('/api/access-denied-log', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrf_token]')?.value || ''
+        },
+        body: JSON.stringify({
+            url: window.location.href,
+            referrer: document.referrer,
+            user_agent: navigator.userAgent,
+            timestamp: new Date().toISOString()
+        })
+    }).catch(error => {
+        console.log('Analytics tracking failed:', error);
+    });
+});
+</script>
+{% endblock %}

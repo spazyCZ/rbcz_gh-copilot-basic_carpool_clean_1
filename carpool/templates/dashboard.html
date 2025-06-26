@@ -1,0 +1,340 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Carpool Parking{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Welcome Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2><i class="fas fa-tachometer-alt me-2"></i>Dashboard</h2>
+                    <p class="text-muted mb-0">Welcome back, {{ current_user.username }}!</p>
+                </div>
+                <div class="text-end">
+                    <small class="text-muted">
+                        <i class="fas fa-user-plus me-1"></i>
+                        Member since: {{ moment(current_user.created_at).format('MMMM Do YYYY') }}
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card border-primary h-100">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3 class="card-title text-primary mb-1" id="total-spots">{{ stats.total_spots }}</h3>
+                            <p class="card-text text-muted small">Total Parking Spots</p>
+                        </div>
+                        <i class="fas fa-parking fa-2x text-primary opacity-25"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-3">
+            <div class="card border-success h-100">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3 class="card-title text-success mb-1" id="available-spots">{{ stats.available_spots }}</h3>
+                            <p class="card-text text-muted small">Available Spots</p>
+                        </div>
+                        <i class="fas fa-check-circle fa-2x text-success opacity-25"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-3">
+            <div class="card border-warning h-100">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3 class="card-title text-warning mb-1" id="my-reservations">{{ stats.my_reservations }}</h3>
+                            <p class="card-text text-muted small">My Reservations</p>
+                        </div>
+                        <i class="fas fa-calendar-check fa-2x text-warning opacity-25"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-3">
+            <div class="card border-info h-100">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3 class="card-title text-info mb-1" id="active-carpools">{{ stats.active_carpools }}</h3>
+                            <p class="card-text text-muted small">Active Carpools</p>
+                        </div>
+                        <i class="fas fa-users fa-2x text-info opacity-25"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Parking Spot Availability Chart -->
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-pie me-2"></i>Parking Spot Status
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="spotStatusChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-history me-2"></i>Recent Activity
+                    </h5>
+                    <a href="{{ url_for('main.profile') }}" class="btn btn-sm btn-outline-primary">
+                        View All
+                    </a>
+                </div>
+                <div class="card-body">
+                    <div id="recent-activity" class="list-group list-group-flush">
+                        <!-- Activity items will be loaded via AJAX -->
+                        <div class="text-center">
+                            <div class="spinner-border spinner-border-sm text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p class="text-muted mt-2 mb-0">Loading recent activity...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions and Upcoming Reservations -->
+    <div class="row">
+        <!-- Quick Actions -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-bolt me-2"></i>Quick Actions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <a href="{{ url_for('main.new_reservation') }}" class="btn btn-primary w-100">
+                                <i class="fas fa-plus me-1"></i>New Reservation
+                            </a>
+                        </div>
+                        <div class="col-6">
+                            <a href="{{ url_for('main.reservations') }}" class="btn btn-outline-primary w-100">
+                                <i class="fas fa-list me-1"></i>View Reservations
+                            </a>
+                        </div>
+                        <div class="col-6">
+                            <a href="{{ url_for('main.carpools') }}" class="btn btn-success w-100">
+                                <i class="fas fa-users me-1"></i>Browse Carpools
+                            </a>
+                        </div>
+                        <div class="col-6">
+                            <a href="{{ url_for('main.new_carpool') }}" class="btn btn-outline-success w-100">
+                                <i class="fas fa-plus me-1"></i>Create Carpool
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upcoming Reservations -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-calendar-alt me-2"></i>Upcoming Reservations
+                    </h5>
+                    <small class="text-muted">Next 7 days</small>
+                </div>
+                <div class="card-body">
+                    <div id="upcoming-reservations">
+                        <!-- Reservations will be loaded via AJAX -->
+                        <div class="text-center">
+                            <div class="spinner-border spinner-border-sm text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p class="text-muted mt-2 mb-0">Loading reservations...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if current_user.role == 'administrator' %}
+    <!-- Admin Section -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-shield-alt me-2"></i>Administrator Tools
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-2">
+                        <div class="col-md-3">
+                            <a href="{{ url_for('admin.dashboard') }}" class="btn btn-danger w-100">
+                                <i class="fas fa-cogs me-1"></i>Admin Dashboard
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{{ url_for('admin.users') }}" class="btn btn-outline-danger w-100">
+                                <i class="fas fa-users me-1"></i>Manage Users
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{{ url_for('admin.parking_spots') }}" class="btn btn-outline-danger w-100">
+                                <i class="fas fa-parking me-1"></i>Manage Spots
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{{ url_for('admin.activity_logs') }}" class="btn btn-outline-danger w-100">
+                                <i class="fas fa-list-alt me-1"></i>View Logs
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Chart.js for parking spot status
+    const ctx = document.getElementById('spotStatusChart').getContext('2d');
+    
+    // Load chart data via AJAX
+    fetch('/api/parking-stats')
+        .then(response => response.json())
+        .then(data => {
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Available', 'Reserved', 'Maintenance'],
+                    datasets: [{
+                        data: [data.available, data.reserved, data.maintenance],
+                        backgroundColor: [
+                            '#28a745',  // Green for available
+                            '#ffc107',  // Yellow for reserved
+                            '#dc3545'   // Red for maintenance
+                        ],
+                        borderColor: [
+                            '#1e7e34',
+                            '#e0a800',
+                            '#c82333'
+                        ],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        })
+        .catch(error => {
+            console.error('Error loading parking stats:', error);
+            document.getElementById('spotStatusChart').parentElement.innerHTML = 
+                '<p class="text-center text-muted">Unable to load chart data</p>';
+        });
+
+    // Load recent activity
+    fetch('/api/recent-activity')
+        .then(response => response.json())
+        .then(data => {
+            const activityContainer = document.getElementById('recent-activity');
+            if (data.length === 0) {
+                activityContainer.innerHTML = '<p class="text-center text-muted">No recent activity</p>';
+                return;
+            }
+            
+            activityContainer.innerHTML = data.map(activity => `
+                <div class="list-group-item list-group-item-action border-0">
+                    <div class="d-flex w-100 justify-content-between">
+                        <small class="text-muted">${activity.timestamp}</small>
+                        <small class="text-muted">${activity.type}</small>
+                    </div>
+                    <p class="mb-1">${activity.details}</p>
+                </div>
+            `).join('');
+        })
+        .catch(error => {
+            console.error('Error loading recent activity:', error);
+            document.getElementById('recent-activity').innerHTML = 
+                '<p class="text-center text-muted">Unable to load activity data</p>';
+        });
+
+    // Load upcoming reservations
+    fetch('/api/upcoming-reservations')
+        .then(response => response.json())
+        .then(data => {
+            const reservationsContainer = document.getElementById('upcoming-reservations');
+            if (data.length === 0) {
+                reservationsContainer.innerHTML = '<p class="text-center text-muted">No upcoming reservations</p>';
+                return;
+            }
+            
+            reservationsContainer.innerHTML = data.map(reservation => `
+                <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+                    <div>
+                        <strong>Spot ${reservation.spot_id}</strong>
+                        <br>
+                        <small class="text-muted">${reservation.date}</small>
+                    </div>
+                    <span class="badge bg-primary">${reservation.name}</span>
+                </div>
+            `).join('');
+        })
+        .catch(error => {
+            console.error('Error loading upcoming reservations:', error);
+            document.getElementById('upcoming-reservations').innerHTML = 
+                '<p class="text-center text-muted">Unable to load reservations</p>';
+        });
+
+    // Auto-refresh statistics every 30 seconds
+    setInterval(function() {
+        fetch('/api/dashboard-stats')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('total-spots').textContent = data.total_spots;
+                document.getElementById('available-spots').textContent = data.available_spots;
+                document.getElementById('my-reservations').textContent = data.my_reservations;
+                document.getElementById('active-carpools').textContent = data.active_carpools;
+            })
+            .catch(error => console.error('Error refreshing stats:', error));
+    }, 30000);
+});
+</script>
+{% endblock %}
