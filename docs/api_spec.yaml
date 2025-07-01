@@ -1,0 +1,175 @@
+openapi: 3.1.0
+info:
+  title: Carpool & Parking Management API
+  version: "1.0"
+  description: API for carpool trip organization, parking reservations, and admin operations.
+servers:
+  - url: /api
+paths:
+  /dashboard-stats:
+    get:
+      summary: Get dashboard statistics
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Dashboard statistics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      reservations:
+                        type: object
+                      carpools:
+                        type: object
+                      user:
+                        type: object
+                        properties:
+                          reservations:
+                            type: integer
+                          carpools:
+                            type: integer
+              examples:
+                success:
+                  value:
+                    success: true
+                    data:
+                      reservations: {active: 5, cancelled: 2}
+                      carpools: {active: 3}
+                      user: {reservations: 2, carpools: 1}
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /available-spots/{date_str}:
+    get:
+      summary: Get available parking spots for a date
+      parameters:
+        - name: date_str
+          in: path
+          required: true
+          schema:
+            type: string
+            format: date
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: List of available spots
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  spots:
+                    type: array
+                    items:
+                      type: string
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: session
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    Carpool:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        origin:
+          type: string
+        destination:
+          type: string
+        departure_time:
+          type: string
+          format: date-time
+        return_time:
+          type: string
+          format: date-time
+        max_passengers:
+          type: integer
+        current_passengers:
+          type: integer
+        notes:
+          type: string
+        organizer_id:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+    Reservation:
+      type: object
+      properties:
+        id:
+          type: integer
+        spot_id:
+          type: string
+        user_id:
+          type: integer
+        name:
+          type: string
+        reservation_date:
+          type: string
+          format: date
+        status:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    ParkingSpot:
+      type: object
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+        location:
+          type: string
+        description:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    Action:
+      type: object
+      properties:
+        id:
+          type: integer
+        action_type:
+          type: string
+        username:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        details:
+          type: string
