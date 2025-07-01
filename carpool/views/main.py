@@ -135,10 +135,11 @@ def reservations():
             current_app.logger.debug(f'Past reservation: ID={reservation.id}, Spot={reservation.spot_id}, Date={reservation.reservation_date}, Status={reservation.status}')
         
         current_app.logger.info(f'Successfully loaded reservations view for user {current_user.username} - {len(current_reservations)} current, {len(past_reservations)} past')
-        
-        return render_template('reservations/list.html',
+        rendered_template = render_template('reservations/list.html',
                              current_reservations=current_reservations,
                              past_reservations=past_reservations)
+
+        return rendered_template
                              
     except Exception as e:
         current_app.logger.error(f'Error loading reservations for user {current_user.username}: {e}', exc_info=True)

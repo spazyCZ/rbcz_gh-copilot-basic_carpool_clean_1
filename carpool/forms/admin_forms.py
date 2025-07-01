@@ -132,7 +132,7 @@ class CreateParkingSpotForm(FlaskForm):
     """
     Admin form for creating new parking spots.
     
-    Provides fields for spot ID, location, and description.
+    Provides fields for spot ID, location, description, and status.
     """
     
     spot_id = StringField(
@@ -151,6 +151,18 @@ class CreateParkingSpotForm(FlaskForm):
         'Description (Optional)',
         validators=[Length(max=500)],
         render_kw={'placeholder': 'Additional details about the parking spot...', 'class': 'form-control', 'rows': '3'}
+    )
+    
+    status = SelectField(
+        'Status',
+        choices=[
+            ('available', 'Available'),
+            ('reserved', 'Reserved'),
+            ('maintenance', 'Maintenance')
+        ],
+        default='available',
+        validators=[DataRequired()],
+        render_kw={'class': 'form-select'}
     )
     
     submit = SubmitField(

@@ -259,6 +259,9 @@ def parking_spots():
     :return: Rendered parking spots list template
     """
     try:
+        # Create form for the modal
+        create_form = CreateParkingSpotForm()
+        
         all_spots = ParkingSpot.query.order_by(ParkingSpot.id).all()
         
         # Get unique locations for filter dropdown
@@ -287,11 +290,14 @@ def parking_spots():
                              all_spots=all_spots,
                              locations=locations,
                              spots_by_location=spots_by_location,
-                             stats=stats)
+                             stats=stats,
+                             create_form=create_form)
         
     except Exception as e:
         current_app.logger.error(f'Error loading parking spots: {e}')
         flash('Error loading parking spots. Please try again.', 'error')
+        # Create form even for error case
+        create_form = CreateParkingSpotForm()
         # Provide default stats for error case
         default_stats = {
             'total_spots': 0,
@@ -304,7 +310,8 @@ def parking_spots():
                              all_spots=[],
                              locations=[],
                              spots_by_location={},
-                             stats=default_stats)
+                             stats=default_stats,
+                             create_form=create_form)
 
 
 @admin_bp.route('/parking-spots/new', methods=['GET', 'POST'])
