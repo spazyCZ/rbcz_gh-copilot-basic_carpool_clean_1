@@ -44,3 +44,4 @@ env/
 .vscode/
 *.swp
 *.swo
+*.log

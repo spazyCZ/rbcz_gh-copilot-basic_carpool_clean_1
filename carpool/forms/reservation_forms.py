@@ -41,13 +41,14 @@ class ReservationForm(FlaskForm):
         if reservation_date.data < date.today():
             raise ValidationError('Reservation date cannot be in the past.')
     
-    def validate(self):
+    def validate(self, extra_validators=None):
         """
         Custom validation to check for double-booking.
         
+        :param extra_validators: Additional validators to be run
         :return: True if validation passes, False otherwise
         """
-        if not super(ReservationForm, self).validate():
+        if not super(ReservationForm, self).validate(extra_validators=extra_validators):
             return False
         
         # If editing an existing reservation and not changing spot or date, validation passes
