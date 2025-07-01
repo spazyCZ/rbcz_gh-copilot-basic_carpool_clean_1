@@ -17,6 +17,7 @@ This is a carpool and parking spot management system for organizations. It enabl
 - [Architecture Overview](architecture.md)
 - [Business Logic & Functional Requirements](business_logic.md)
 - [Domain Data Model](domain_model.md)
+- [Database Structure & Schema](database_structure.md)
 - [API Specification (OpenAPI)](api_spec.yaml)
 - [Authentication & Security](auth_security.md)
 
@@ -25,6 +26,7 @@ This is a carpool and parking spot management system for organizations. It enabl
 - Architecture: flowchart (system-overview)
 - Reservation lifecycle: stateDiagram-v2 (reservation-states)
 - Domain model: erDiagram (entities-relationships)
+- Database structure: erDiagram (database-schema)
 
 ## Key Features
 

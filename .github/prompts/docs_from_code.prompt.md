@@ -1,3 +1,8 @@
+---
+mode: agent
+---
+
+
 # Produce Docs From Code – Copilot Prompt
 
 Go thru the @codebase and generate comprehensive documentation files based on the source code structure, business logic, domain model, API specification, authentication/security mechanisms, and overall architecture.
@@ -25,7 +30,7 @@ Go thru the @codebase and generate comprehensive documentation files based on th
 
 ## 1. Output files
 
-Return **SEVEN fenced blocks**, each starting with:
+Return **EIGHT fenced blocks**, each starting with:
 
 ```text
 FILE: docs/<file-name>
@@ -38,10 +43,11 @@ Generate these files:
 | 1 | `architecture.md`       | `## Application Architecture Overview`        |
 | 2 | `business_logic.md`     | `## Business Logic & Functional Requirements` |
 | 3 | `domain_model.md`       | `## Domain Data Model`                        |
-| 4 | `api_spec.yaml`         | Complete OpenAPI 3.1 spec in YAML             |
-| 5 | `auth_security.md`      | `## Authentication & Security`                |
-| 6 | `user_flow_diagrams.md` | `## User Flow Diagrams`                       |
-| 7 | `README.md`             | Doc hub with links & diagram index            |
+| 4 | `database_structure.md` | `## Database Structure & Schema`              |
+| 5 | `api_spec.yaml`         | Complete OpenAPI 3.1 spec in YAML             |
+| 6 | `auth_security.md`      | `## Authentication & Security`                |
+| 7 | `user_flow_diagrams.md` | `## User Flow Diagrams`                       |
+| 8 | `README.md`             | Doc hub with links & diagram index            |
 
 ---
 
@@ -75,6 +81,25 @@ For every inferred use‑case:
 * **Database Schema**: Table structures, indexes, constraints.
 * **Data Access Patterns**: How data flows through the application.
 * State data retention/compliance constraints if applicable.
+
+### **database\_structure.md**
+
+* **Database Type**: Specify the database system (PostgreSQL, MySQL, SQLite, etc.) and version.
+* **Connection Configuration**: How the application connects to the database (connection strings, pools, etc.).
+* **Table Structure**: For each table, document:
+  - Table name and purpose
+  - Column definitions with data types, constraints, and descriptions
+  - Primary keys and foreign key relationships
+  - Indexes and their purposes
+  - Triggers or stored procedures (if any)
+* **Mermaid ERD**: Create a comprehensive `erDiagram` showing:
+  - All tables and their relationships
+  - Cardinality (one-to-one, one-to-many, many-to-many)
+  - Key constraints and foreign key relationships
+* **Migration Strategy**: How database schema changes are managed
+* **Data Seeding**: Initial data requirements and seed scripts
+* **Performance Considerations**: Indexing strategy, query optimization notes
+* **Database Constraints & Rules**: Business rules enforced at the database level
 
 ### **api\_spec.yaml**
 
@@ -117,11 +142,12 @@ For every inferred use‑case:
 
 * **About**: Brief description of the application's purpose and main features.
 * **Quick Start**: Brief setup and run instructions.
-* **Documentation Links**: Bullet links to the six sibling docs.
+* **Documentation Links**: Bullet links to the seven sibling docs.
 * **## Diagram Index (Mermaid)**: list each diagram produced, e.g.
   `- Architecture: flowchart (system-overview)`
   `- User flow: flowchart TD (user-journeys)`
   `- Domain model: erDiagram (entities-relationships)`
+  `- Database structure: erDiagram (database-schema)`
 * **Key Features**: Main functionality highlights.
 * **Configuration**: Important environment variables and settings.
 * **Change Log**: Chronological list of major changes and releases. (version, date, jira id, description)
@@ -141,6 +167,13 @@ For every inferred use‑case:
   - Template inheritance and static file organization
   - Service layer patterns and business logic separation
   - User flow patterns from templates through routes to business logic
+  - Database model definitions and migration files
+* For database documentation:
+  - Parse SQLAlchemy model classes for table definitions
+  - Identify relationships between models (ForeignKey, relationship())
+  - Document database constraints and indexes
+  - Include migration files analysis for schema evolution
+  - Map ORM models to actual database tables
 * For authentication systems, document:
   - User model and role definitions
   - Login/logout flows
