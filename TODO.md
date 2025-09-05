@@ -11,21 +11,21 @@ Status Legend: ❌ Not Started | 🚧 In Progress | ✅ Done | 🔍 Under Review
 ### 1.1 Repository Bootstrap
 - Task: Create project folder structure (see README Architecture)
   - Files: `app/`, `tests/`, `migrations/`, `config/`, `static/`, `templates/`, `services/`, `api/`, `cli/`
-  - Status: ❌
+  - Status: ✅
 - Task: Add `requirements.txt` with pinned baseline dependencies
-  - Status: ❌
+  - Status: ✅
 - Task: Add `.env.example` with all documented variables
-  - Status: ❌
+  - Status: ✅
 - Task: Implement `config/settings.py` (Dev / Test / Prod classes)
-  - Status: ❌
+  - Status: ✅
 - Task: Flesh out `README` Quick Start from planned → actionable
   - Status: ❌
 
 ### 1.2 Application Factory & Extensions
 - Task: Implement `create_app` factory in `app/__init__.py`
-  - Status: ❌
+  - Status: ✅
 - Task: Add `extensions.py` (db, migrate, login_manager, csrf, limiter placeholder)
-  - Status: ❌
+  - Status: ✅
 - Task: Configure logging (basic formatter) in factory
   - Status: ❌
 - Task: Add global error handler scaffold
@@ -36,7 +36,7 @@ Status Legend: ❌ Not Started | 🚧 In Progress | ✅ Done | 🔍 Under Review
 ## Phase 2: Data Layer (Models & Migrations)
 - Task: Implement models (`ParkingSpot`, `Reservation`, `User`, `Action`)
   - Include UNIQUE `(spot_id, reservation_date)`
-  - Status: ❌
+  - Status: ✅
 - Task: Add indices (reservation_date, spot_id)
   - Status: ❌
 - Task: Initial Alembic migration
@@ -48,11 +48,11 @@ Status Legend: ❌ Not Started | 🚧 In Progress | ✅ Done | 🔍 Under Review
 
 ## Phase 3: Security & Authentication Core
 - Task: Implement password hashing (Werkzeug) in User model/service
-  - Status: ❌
+  - Status: ✅
 - Task: Session login/logout endpoints (`/api/v1/auth/login`, `/api/v1/auth/logout`)
-  - Status: ❌
+  - Status: ✅
 - Task: Protect session-only endpoints with login required
-  - Status: ❌
+  - Status: ✅
 - Task: (Planned) CSRF integration strategy finalized
   - Status: ❌
 
@@ -60,27 +60,27 @@ Status Legend: ❌ Not Started | 🚧 In Progress | ✅ Done | 🔍 Under Review
 
 ## Phase 4: Service Layer
 - Task: `reservation_service.py` (create/update/cancel/list with conflict handling)
-  - Status: ❌
+  - Status: ✅
 - Task: `spot_service.py` (availability/filter logic by date/status)
-  - Status: ❌
+  - Status: ✅
 - Task: `user_service.py` (auth helpers, current user retrieval)
-  - Status: ❌
+  - Status: ✅
 - Task: `audit_service.py` (uniform action logging interface)
-  - Status: ❌
+  - Status: ✅
 
 ---
 
 ## Phase 5: API Layer (Blueprint `api`)
 - Task: Register `api` blueprint at `/api/v1`
-  - Status: ❌
+  - Status: ✅
 - Task: Health endpoint (`/api/v1/health`)
-  - Status: ❌
+  - Status: ✅
 - Task: Spots endpoints (`/api/v1/spots`, `/api/v1/spots/<id>`)
-  - Status: ❌
+  - Status: ✅
 - Task: Reservations endpoints (CRUD)
-  - Status: ❌
+  - Status: ✅
 - Task: User profile endpoint (`/api/v1/users/me`)
-  - Status: ❌
+  - Status: ✅
 - Task: Audit list endpoint (`/api/v1/actions` with pagination + admin check)
   - Status: ❌
 
@@ -100,13 +100,13 @@ Status Legend: ❌ Not Started | 🚧 In Progress | ✅ Done | 🔍 Under Review
 
 ## Phase 7: Frontend Shell & Hydration
 - Task: Create base templates (`base.html`, `index.html`, `login.html`)
-  - Status: ❌
+  - Status: ✅
 - Task: Implement `static/js/main.js` and per-feature modules (spots/reservations)
-  - Status: ❌
+  - Status: ✅
 - Task: Add minimal CSS scaffold (Bootstrap inclusion)
-  - Status: ❌
+  - Status: ✅
 - Task: Client-side fetch + DOM population for spots list
-  - Status: ❌
+  - Status: ✅
 
 ---
 
