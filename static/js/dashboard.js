@@ -21,18 +21,60 @@ document.addEventListener('DOMContentLoaded', function() {
  */
 async function loadDashboardStats() {
     try {
-        // This would normally call multiple API endpoints
-        // For now, we'll use placeholder data until APIs are implemented
-        updateStatsDisplay({
-            totalSpots: 15,
-            availableSpots: 12,
-            reservedSpots: 3,
-            myReservations: 1
-        });
+        // Load spot statistics from API
+        const response = await API.get('/spots/statistics');
+        
+        if (response.data && response.data.statistics) {
+            const stats = response.data.statistics;
+            const todayStats = stats.today_statistics;
+            
+            updateStatsDisplay({
+                totalSpots: stats.total_spots,
+                availableSpots: todayStats.available_count,
+                reservedSpots: todayStats.reserved_count,
+                myReservations: 0 // Will be loaded separately
+            });
+            
+            // Load user's reservation count
+            loadUserReservationCount();
+        }
         
     } catch (error) {
         console.error('Error loading dashboard stats:', error);
-        // Don't show error to user for background data loading
+        // Show fallback data on error
+        updateStatsDisplay({
+            totalSpots: '?',
+            availableSpots: '?',
+            reservedSpots: '?',
+            myReservations: '?'
+        });
+    }
+}
+
+/**
+ * Load user's reservation count
+ */
+async function loadUserReservationCount() {
+    try {
+        const response = await API.get('/reservations');
+        
+        if (response.data && response.data.reservations) {
+            const activeReservations = response.data.reservations.filter(r => r.is_active);
+            const upcomingReservations = activeReservations.filter(r => {
+                const reservationDate = new Date(r.reservation_date);
+                return reservationDate >= new Date();
+            });
+            
+            // Update the my reservations count
+            const element = document.getElementById('my-reservations');
+            if (element) {
+                element.textContent = upcomingReservations.length;
+                element.classList.add('fade-in');
+            }
+        }
+        
+    } catch (error) {
+        console.error('Error loading user reservations:', error);
     }
 }
 
@@ -130,17 +172,28 @@ async function loadAvailableSpots() {
         // Clear current options
         spotSelect.innerHTML = '<option value="">Loading...</option>';
         
-        // This would normally call the spots API
-        // For now, use placeholder data
-        const spots = [
-            { id: 'A1', location: 'Level A - Near entrance' },
-            { id: 'A2', location: 'Level A - Near entrance' },
-            { id: 'B1', location: 'Level B - Standard' },
-            { id: 'G1', location: 'Ground level - Visitor' }
-        ];
+        // Fetch available spots from API
+        const response = await API.get(`/spots?date=${selectedDate}`);
         
-        spotSelect.innerHTML = '<option value="">Select a spot...</option>' +
-            spots.map(spot => `<option value="${spot.id}">${spot.id} - ${spot.location}</option>`).join('');
+        if (response.data && response.data.spots) {
+            const spots = response.data.spots;
+            
+            if (spots.length === 0) {
+                spotSelect.innerHTML = '<option value="">No spots available for selected date</option>';
+            } else {
+                spotSelect.innerHTML = '<option value="">Select a spot...</option>' +
+                    spots.map(spot => {
+                        const features = [];
+                        if (spot.is_handicap_accessible) features.push('♿');
+                        if (spot.is_electric_charging) features.push('⚡');
+                        const featureText = features.length > 0 ? ` ${features.join(' ')}` : '';
+                        
+                        return `<option value="${spot.id}">${spot.id} - ${spot.location}${featureText}</option>`;
+                    }).join('');
+            }
+        } else {
+            spotSelect.innerHTML = '<option value="">Error loading spots</option>';
+        }
             
     } catch (error) {
         console.error('Error loading available spots:', error);
@@ -172,21 +225,27 @@ async function handleReservationSubmit(event) {
     try {
         UI.clearAlerts();
         
-        // This would normally call the reservations API
-        // For now, show success message
-        UI.showAlert('Reservation created successfully! (Demo mode)', 'success');
+        // Create reservation via API
+        const response = await API.post('/reservations', reservationData);
         
-        // Close modal
-        const modal = bootstrap.Modal.getInstance(document.getElementById('reservationModal'));
-        if (modal) {
-            modal.hide();
+        if (response.data && response.data.success) {
+            UI.showAlert('Reservation created successfully!', 'success');
+            
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('reservationModal'));
+            if (modal) {
+                modal.hide();
+            }
+            
+            // Reset form
+            event.target.reset();
+            
+            // Refresh dashboard stats
+            loadDashboardStats();
+            loadRecentActivity();
+        } else {
+            UI.showAlert('Failed to create reservation. Please try again.', 'error');
         }
-        
-        // Reset form
-        event.target.reset();
-        
-        // Refresh dashboard stats
-        loadDashboardStats();
         
     } catch (error) {
         handleError(error);

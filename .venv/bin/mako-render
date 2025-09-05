@@ -1,8 +1,0 @@
-#!/home/runner/work/rbcz_gh-copilot-basic_carpool_clean_1/rbcz_gh-copilot-basic_carpool_clean_1/.venv/bin/python3
-# -*- coding: utf-8 -*-
-import re
-import sys
-from mako.cmd import cmdline
-if __name__ == '__main__':
-    sys.argv[0] = re.sub(r'(-script\.pyw|\.exe)?$', '', sys.argv[0])
-    sys.exit(cmdline())

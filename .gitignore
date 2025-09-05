@@ -29,6 +29,10 @@ instance/
 *.db
 *.sqlite3
 
+# Logs
+logs/
+*.log
+
 # Testing
 .coverage
 htmlcov/
@@ -36,6 +40,7 @@ htmlcov/
 
 # Virtual Environment
 venv/
+.venv/
 ENV/
 env/
 
