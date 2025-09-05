@@ -2,13 +2,35 @@
 
 This document provides comprehensive guidelines for generating code using GitHub Copilot in our project. The instructions combine best practices with our specific requirements and default tech stack.
 
+## GENERAL GUIDELINES FOR CODE GENERATION
+
+- **KEEP PROJECT CLEAN: Validation, verification or onetime script placement in the `checks/` directory. Delete the script after it has been run.**
+- **RUN python commands in project .venv/**
+
+
+
 ## Objectives
 - Generate clear, maintainable, and testing-friendly code.
 - Ensure the code includes thorough documentation and data type declarations.
 - Encourage the use of primary logging for printing events.
 - Produce comprehensive tests with new classes.
+- Make web design modern, apple style, UX best practices
+
+
 
 ## Guidelines
+
+### File and Method Length Guidelines
+
+To ensure optimal efficiency and maintainability for both GitHub Copilot and human collaborators, please adhere to the following guidelines regarding code length:
+
+#### File Size
+- **Recommended maximum file length:** 600 lines.
+- If a file grows significantly beyond this limit, split it into smaller, focused modules or files.
+
+#### Method/Function Size
+- **Recommended maximum method/function length:** 100 lines.
+- If a function or method exceeds this length, refactor it into smaller, more manageable units.
 
 ### 1. Documentation and Comments
 - Every class and method must have comments explaining their purpose and functionality.
