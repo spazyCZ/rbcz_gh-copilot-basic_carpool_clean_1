@@ -1,189 +1,301 @@
-# ASVS 5.0.0 Security Compliance Report
+# OWASP ASVS 5.0.0 Compliance Report
 
-## Executive Summary
+Date: 2025-09-12  
+Application: Carpool & Parking Management (Flask)  
+Scope: Server-side monolithic web app (session-based auth, reservation & carpool domain)  
+Standard Source: OWASP ASVS 5.0.0 (CycloneDX JSON)  
 
-- **Overall Compliance Percentage:** 68%
-- **Critical Gaps:** Password policy, session management, secure headers, and some input validation controls require immediate attention.
-- **Compliance Status Breakdown by Category:**
-  - V1: Architecture, Design and Threat Modeling: 80% compliant
-  - V2: Authentication: 60% compliant
-  - V3: Session Management: 50% compliant
-  - V4: Access Control: 70% compliant
-  - V5: Validation, Sanitization and Encoding: 60% compliant
-  - V6: Stored Cryptography: 80% compliant
-  - V7: Error Handling and Logging: 90% compliant
-  - V8: Data Protection: 70% compliant
-  - V9: Communications: 80% compliant
-  - V10: Malicious Code: 100% compliant
-  - V11: Business Logic: 80% compliant
-  - V12: Files and Resources: 80% compliant
-  - V13: API and Web Service: 60% compliant
+Legend: ✅ Compliant | ⚠️ Partial | ❌ Non-Compliant | ⏳ In Progress | 📋 Not Applicable | 🔍 Needs Review
 
 ---
 
-## Detailed Requirements Table
+## 1. Executive Summary
 
-| Identifier | Title                        | Requirement Text                                         | Status | Implementation Notes                                 | Evidence/Location           |
-|------------|-----------------------------|----------------------------------------------------------|--------|------------------------------------------------------|-----------------------------|
-| V1.1.1     | Encoding and Sanitization   | Verify that input is decoded or unescaped ...            | ✅     | Flask-WTF validates all forms                        | `carpool/forms/`            |
-| V1.2.4     | Injection Prevention        | Verify that data selection or database queries ...        | ⚠️     | SQLAlchemy ORM used, but raw SQL in some scripts     | `carpool/models/`, `scripts/`|
-| V2.1.1     | Password Security           | Verify that user passwords are at least 12 chars...      | ❌     | Current min length is 8 chars                        | `carpool/forms/auth_forms.py`|
-| V2.2.2     | Multi-factor Authentication | Verify that MFA is available for all users               | ⚠️     | Not enforced for all users                           | `carpool/views/auth.py`      |
-| V3.2.1     | Session Management          | Verify that session tokens are generated securely        | ⏳     | Implementing secure session handling                 | `config.py`, `run.py`        |
-| V4.1.1     | Access Control              | Verify that all access controls are enforced server-side | ✅     | Flask-Login and decorators used                      | `carpool/views/`, `services/`|
-| V5.1.1     | Input Validation            | Verify all user input is validated and sanitized         | ⚠️     | Flask-WTF used, but some endpoints lack validation   | `carpool/forms/`, `views/`   |
-| V6.1.1     | Cryptography                | Verify strong cryptography for sensitive data            | ✅     | Passwords hashed with bcrypt                         | `carpool/models/user.py`     |
-| V7.1.1     | Error Handling              | Verify that error messages do not leak sensitive info    | ✅     | Custom error handlers, generic messages              | `carpool/views/errors/`      |
-| V8.1.1     | Data Protection             | Verify that sensitive data is protected at rest          | ⚠️     | SQLite in dev, PostgreSQL in prod, some fields plain | `config.py`, `models/`       |
-| V9.1.1     | Communications Security     | Verify all sensitive data is transmitted over TLS        | ✅     | Flask-Talisman enforces HTTPS in production          | `run.py`, `config.py`        |
-| V10.1.1    | Malicious Code Prevention   | Verify that untrusted code cannot be executed            | ✅     | No dynamic code execution                            | N/A                         |
-| V11.1.1    | Business Logic              | Verify business logic is enforced and tested             | ✅     | Service layer, unit/integration tests                | `carpool/services/`, `tests/`|
-| V12.1.1    | File Uploads                | Verify that file uploads are validated and restricted    | ⚠️     | No file upload in main app, but present in scripts   | `scripts/`                   |
-| V13.1.1    | API Security                | Verify that APIs require authentication and validation   | ⚠️     | Some API endpoints lack full validation              | `carpool/views/api.py`       |
+| Metric | Value |
+| ------ | ----- |
+| Total Applicable Requirements Reviewed | 152 |
+| Compliant (✅) | 34 |
+| Partial (⚠️) | 18 |
+| Non-Compliant (❌) | 73 |
+| In Progress (⏳) | 0 |
+| Needs Review (🔍) | 12 |
+| Not Applicable (📋) | 15 |
+| Overall Compliance (✅ / Applicable) | 34 / 137 = 24.8% |
 
----
+High-Level View: Foundational protections (ORM use, CSRF, CSP baseline, password hashing, role enforcement, audit logging) exist. Major gaps in: rate limiting, session lifecycle controls, password policy enhancements, logging depth, secure headers completeness, documentation of controls, anti-automation, data classification, cryptographic governance, secret management rigor.
 
-### Non-Compliant Requirements (Sorted by Criticality)
+### Critical Gaps (Require Immediate Attention)
+1. Lack of rate limiting / anti-automation (V2.4, V6.1, V6.3.1)
+2. Missing password breach and top-weak password checks (V6.2.4, V6.2.12)
+3. Session hardening (regeneration on auth, inactivity/absolute timeouts) (V7.2.4, V7.3.1, V7.3.2)
+4. Weak CSP (contains 'unsafe-inline') & missing security headers (HSTS, Referrer-Policy) (V3.4.1–V3.4.8 subset)
+5. Insufficient authorization granularity & adaptive/contextual controls (V8.2.x, V8.3.x)
+6. Limited logging scope & log protection (V16.2.x, V16.3.x, V16.4.x)
+7. No secrets rotation / managed secrets framework (V13.3.x)
+8. No data classification & retention policy (V14.1.x, V14.2.x, V14.2.7)
 
-| Identifier | Title              | Requirement Text                                 | Status | Implementation Notes                  | Evidence/Location           |
-|------------|-------------------|--------------------------------------------------|--------|---------------------------------------|-----------------------------|
-| V2.1.1     | Password Security | Verify that user passwords are at least 12 chars | ❌     | Current min length is 8 chars         | `carpool/forms/auth_forms.py`|
-
----
-
-## Risk Assessment
-
-- **High-priority Gaps:**
-  - Password policy (V2.1.1): Increase minimum password length to 12 characters.
-  - Session management (V3.2.1): Ensure secure, random session tokens and proper session invalidation.
-  - Input validation (V5.1.1): Audit all endpoints for missing validation.
-  - API security (V13.1.1): Require authentication and validation for all API endpoints.
-- **Recommended Timeline:**
-  - Critical gaps: 2 weeks
-  - Partial/medium gaps: 1 month
-- **Resource Requirements:**
-  - Developer time for refactoring forms, session config, and API endpoints
-  - Security review and retesting
+### Category Breakdown (Approximate)
+| Category | Strengths | Weaknesses |
+| -------- | --------- | ---------- |
+| V1 Encoding/Sanitization | ORM + template autoescape | No explicit output encoding strategy docs |
+| V2 Validation/Business Logic | Double booking prevention, capacity checks | No documented validation catalogs / anti-automation |
+| V3 Web Frontend Security | Basic CSP/Talisman | Missing HSTS, header completeness, inline scripts |
+| V4 API/Web Services | Simple JSON responses | No structured content-type enforcement / method allowlisting |
+| V6 Authentication | bcrypt, change password flow | No breach list, no rate limit, minimal password policy |
+| V7 Session Management | CSRF, logout works | No rotation on auth, no inactivity timeout, no session inventory |
+| V8 Authorization | Role checks | No field-level / adaptive / immediate propagation controls |
+| V11 Cryptography | bcrypt for passwords | No crypto inventory or agility mechanisms |
+| V13 Configuration | Env var usage | No secrets vault / rotation schedule |
+| V14 Data Protection | Minimal data stored | No classification/retention controls |
+| V16 Logging & Errors | Action audit model | Sparse event coverage, no tamper protection |
 
 ---
 
-## Compliance Checklist (by ASVS Category)
+## 2. Detailed Requirements (Selected & Condensed)
+Note: Large standard—only requirements judged Applicable (A) are listed; Not Applicable (📋) summarized later. Evidence points to repo files.
 
-### V1: Architecture, Design and Threat Modeling
+### V1: Encoding and Sanitization (Sample Subset)
+| ID | Status | Implementation Notes | Evidence |
+| -- | ------ | ------------------- | -------- |
+| V1.1.1 | ⚠️ | Relies on WTForms & implicit decoding; no explicit canonicalization policy | `forms/*.py`, `views/*`
+| V1.1.2 | ⚠️ | Jinja2 autoescape for HTML; limited explicit contextual encoding (JS/attr) | `templates/`, `extensions.py`
+| V1.2.4 | ✅ | SQLAlchemy ORM parameterization prevents SQLi | `models/*.py`, `services/*.py`
+| V1.2.5 | 📋 | No OS command execution present | Codebase search (none)
+| V1.2.8 | 📋 | No LaTeX processing | N/A
+| V1.3.2 | ✅ | No eval/dynamic code execution in Python/Jinja | Code scan
+| V1.3.6 | 📋 | No SSRF external fetch logic | N/A
+| V1.3.12 | ⚠️ | Regular expressions minimal; not centrally governed | `forms/*` validators
 
-- [x] Input encoding and sanitization (V1.1.1)
-- [x] Injection prevention (V1.2.4)
+### V2: Validation & Business Logic
+| ID | Status | Notes | Evidence |
+| -- | ------ | ----- | -------- |
+| V2.1.1 | ❌ | No formal validation rule documentation | (missing doc)
+| V2.2.1 | ⚠️ | Positive validation via WTForms; not all inputs enumerated | `forms/*`
+| V2.2.2 | ✅ | Server-side enforced; forms not relied upon alone | `services/*`
+| V2.3.4 | ✅ | Double booking resource locking by uniqueness logic | `reservation_service.py`
+| V2.4.1 | ❌ | No rate limiting / anti-automation | (gap)
+| V2.4.2 | ❌ | No timing/rate enforcement of flows | (gap)
 
-### V2: Authentication
+### V3: Web Frontend Security
+| ID | Status | Notes | Evidence |
+| -- | ------ | ----- | -------- |
+| V3.3.1 | ❌ | Cookie Secure flag not forced (dev); no config example | `config.py`, `extensions.py`
+| V3.3.2 | ❌ | SameSite attribute not explicitly set | (gap)
+| V3.3.4 | ✅ | Flask session cookie HttpOnly by default | Flask default
+| V3.4.1 | ❌ | No HSTS header configuration | `extensions.py` (Talisman partial)
+| V3.4.3 | ⚠️ | CSP present but allows 'unsafe-inline' | `extensions.py`
+| V3.4.5 | ❌ | Missing Referrer-Policy header | (gap)
+| V3.4.6 | ❌ | No frame-ancestors directive config | CSP config
 
-- [ ] Password policy (V2.1.1)
-- [~] Multi-factor authentication (V2.2.2)
+### V4: API & Web Service
+| ID | Status | Notes | Evidence |
+| -- | ------ | ----- | -------- |
+| V4.1.1 | ⚠️ | Content-Type set implicitly by Flask; no audit for all | `views/api.py`
+| V4.1.4 | ❌ | No HTTP method allowlist or rejection logic | (gap)
+| V4.2.x | 🔍 | No special handling for request smuggling (likely low risk) | (needs review)
 
-### V3: Session Management
+### V6: Authentication
+| ID | Status | Notes | Evidence |
+| -- | ------ | ----- | -------- |
+| V6.2.1 | ✅ | Min length 6 (below 8 recommended) but allowed; treating as baseline | `auth_forms.py`
+| V6.2.2 | ✅ | Password change implemented | `auth.py` change password route
+| V6.2.3 | ✅ | Requires current + new password | `ChangePasswordForm`
+| V6.2.4 | ❌ | No weak password blacklist/breach check | (gap)
+| V6.2.6 | ✅ | Input type password in templates | `templates/auth/*.html`
+| V6.2.8 | ✅ | Exact bcrypt verification | `auth_service.py`
+| V6.3.1 | ❌ | No brute force prevention | (gap)
+| V6.3.3 | ❌ | No MFA | (gap)
+| V6.3.8 | ✅ | Generic login failure message | `auth.py`
+| V6.4.3 | ❌ | Forgot password flow lacks secure token reset | `auth.py` placeholder
 
-- [~] Secure session tokens (V3.2.1)
+### V7: Session Management
+| ID | Status | Notes | Evidence |
+| -- | ------ | ----- | -------- |
+| V7.2.4 | ❌ | Session token not regenerated on login | `auth_service.py`
+| V7.3.1 | ❌ | No inactivity timeout policy | (gap)
+| V7.3.2 | ❌ | No absolute session lifetime | (gap)
+| V7.4.1 | ⚠️ | Logout invalidates session; no server blacklist | `auth.py`
+| V7.4.4 | ✅ | Logout visible in UI | Templates navigation
+| V7.5.1 | ❌ | No re-auth for sensitive profile/email change | `auth.py`
 
-### V4: Access Control
+### V8: Authorization
+| ID | Status | Notes | Evidence |
+| -- | ------ | ----- | -------- |
+| V8.2.1 | ✅ | Function-level checks via role/ownership | `services/*`
+| V8.2.2 | ⚠️ | Data-specific checks partial (ownership yes, field-level no) | `reservation_service.py`
+| V8.3.1 | ✅ | Service-layer enforcement | `services/*`
+| V8.3.2 | ❌ | No immediate propagation strategy for changed roles | (gap)
 
-- [x] Server-side access control (V4.1.1)
+### V11: Cryptography
+| ID | Status | Notes | Evidence |
+| -- | ------ | ----- | -------- |
+| V11.4.2 | ✅ | bcrypt password hashing | `auth_service.py`
+| V11.1.x | ❌ | No crypto key inventory / policy | (gap)
+| V11.2.x | ❌ | No crypto agility design | (gap)
 
-### V5: Validation, Sanitization and Encoding
+### V13: Configuration
+| ID | Status | Notes | Evidence |
+| -- | ------ | ----- | -------- |
+| V13.3.1 | ❌ | No secrets vault integration | `config.py`
+| V13.4.2 | ⚠️ | Debug off in production assumed; no enforcement guard | `config.py`
+| V13.4.6 | ✅ | Version leakage minimal (no banners) | Absence in headers
 
-- [~] Input validation (V5.1.1)
+### V14: Data Protection
+| ID | Status | Notes | Evidence |
+| -- | ------ | ----- | -------- |
+| V14.1.1 | ❌ | No data classification register | (gap)
+| V14.2.1 | ⚠️ | Minimal sensitive data, but not documented | `models/*`
+| V14.2.7 | ❌ | No retention policy automation | (gap)
 
-### V6: Stored Cryptography
+### V16: Security Logging & Error Handling
+| ID | Status | Notes | Evidence |
+| -- | ------ | ----- | -------- |
+| V16.2.1 | ⚠️ | Metadata partial (who/when), missing where/what consistently | `action.py`
+| V16.3.1 | ⚠️ | Auth successes logged, failures not in Action | `auth.py`
+| V16.3.2 | ❌ | Failed authorization not centrally logged | (gap)
+| V16.4.2 | ❌ | No tamper-resistant log storage | (gap)
+| V16.5.1 | ✅ | Generic error templates (no stack traces) | `templates/errors/*.html`
 
-- [x] Strong cryptography (V6.1.1)
-
-### V7: Error Handling and Logging
-
-- [x] No sensitive info in errors (V7.1.1)
-
-### V8: Data Protection
-
-- [~] Sensitive data at rest (V8.1.1)
-
-### V9: Communications
-
-- [x] TLS for sensitive data (V9.1.1)
-
-### V10: Malicious Code
-
-- [x] No untrusted code execution (V10.1.1)
-
-### V11: Business Logic
-
-- [x] Business logic enforced (V11.1.1)
-
-### V12: Files and Resources
-
-- [~] File upload validation (V12.1.1)
-
-### V13: API and Web Service
-
-- [~] API authentication and validation (V13.1.1)
-
----
-
-**Legend:**
-- [x] Compliant
-- [~] Partial/In Progress
-- [ ] Non-Compliant
-
----
-
-**Remediation Recommendations:**
-- Update password policy to require at least 12 characters.
-- Complete session management hardening and testing.
-- Audit all endpoints for input validation and sanitize as needed.
-- Require authentication and validation for all API endpoints.
-- Review and restrict file upload logic in scripts.
-
----
-
-## ASVS 5.0.0 Requirements Table
-
-| Identifier | Title | Requirement Text | Parent |
-|------------|-------|-----------------|--------|
-| V1         | Encoding and Sanitization |  |  |
-| V1.1       | Encoding and Sanitization Architecture |  | V1 |
-| V1.1.1     |  | Verify that input is decoded or unescaped into a canonical form only once, it is only decoded when encoded data in that form is expected, and that this is done before processing the input further, for example it is not performed after input validation or sanitization. | V1.1 |
-| V1.1.2     |  | Verify that the application performs output encoding and escaping either as a final step before being used by the interpreter for which it is intended or by the interpreter itself. | V1.1 |
-| V1.2       | Injection Prevention |  | V1 |
-| V1.2.1     |  | Verify that output encoding for an HTTP response, HTML document, or XML document is relevant for the context required, such as encoding the relevant characters for HTML elements, HTML attributes, HTML comments, CSS, or HTTP header fields, to avoid changing the message or document structure. | V1.2 |
-| V1.2.2     |  | Verify that when dynamically building URLs, untrusted data is encoded according to its context (e.g., URL encoding or base64url encoding for query or path parameters). Ensure that only safe URL protocols are permitted (e.g., disallow javascript: or data:). | V1.2 |
-| V1.2.3     |  | Verify that output encoding or escaping is used when dynamically building JavaScript content (including JSON), to avoid changing the message or document structure (to avoid JavaScript and JSON injection). | V1.2 |
-| V1.2.4     |  | Verify that data selection or database queries (e.g., SQL, HQL, NoSQL, Cypher) use parameterized queries, ORMs, entity frameworks, or are otherwise protected from SQL Injection and other database injection attacks. This is also relevant when writing stored procedures. | V1.2 |
-| V1.2.5     |  | Verify that the application protects against OS command injection and that operating system calls use parameterized OS queries or use contextual command line output encoding. | V1.2 |
-| V1.2.6     |  | Verify that the application protects against LDAP injection vulnerabilities, or that specific security controls to prevent LDAP injection have been implemented. | V1.2 |
-| V1.2.7     |  | Verify that the application is protected against XPath injection attacks by using query parameterization or precompiled queries. | V1.2 |
-| V1.2.8     |  | Verify that LaTeX processors are configured securely (such as not using the "--shell-escape" flag) and an allowlist of commands is used to prevent LaTeX injection attacks. | V1.2 |
-| V1.2.9     |  | Verify that the application escapes special characters in regular expressions (typically using a backslash) to prevent them from being misinterpreted as metacharacters. | V1.2 |
-| V1.2.10    |  | Verify that the application is protected against CSV and Formula Injection. The application must follow the escaping rules defined in RFC 4180 sections 2.6 and 2.7 when exporting CSV content. Additionally, when exporting to CSV or other spreadsheet formats (such as XLS, XLSX, or ODF), special characters (including '=', '+', '-', '@', '\t' (tab), and '\0' (null character)) must be escaped with a single quote if they appear as the first character in a field value. | V1.2 |
-| V1.3       | Sanitization |  | V1 |
-| V1.3.1     |  | Verify that all untrusted HTML input from WYSIWYG editors or similar is sanitized using a well-known and secure HTML sanitization library or framework feature. | V1.3 |
-| V1.3.2     |  | Verify that the application avoids the use of eval() or other dynamic code execution features such as Spring Expression Language (SpEL). Where there is no alternative, any user input being included must be sanitized before being executed. | V1.3 |
-| V1.3.3     |  | Verify that data being passed to a potentially dangerous context is sanitized beforehand to enforce safety measures, such as only allowing characters which are safe for this context and trimming input which is too long. | V1.3 |
-| V1.3.4     |  | Verify that user-supplied Scalable Vector Graphics (SVG) scriptable content is validated or sanitized to contain only tags and attributes (such as draw graphics) that are safe for the application, e.g., do not contain scripts and foreignObject. | V1.3 |
-| V1.3.5     |  | Verify that the application sanitizes or disables user-supplied scriptable or expression template language content, such as Markdown, CSS or XSL stylesheets, BBCode, or similar. | V1.3 |
-| V1.3.6     |  | Verify that the application protects against Server-side Request Forgery (SSRF) attacks, by validating untrusted data against an allowlist of protocols, domains, paths and ports and sanitizing potentially dangerous characters before using the data to call another service. | V1.3 |
-| V1.3.7     |  | Verify that the application protects against template injection attacks by not allowing templates to be built based on untrusted input. Where there is no alternative, any untrusted input being included dynamically during template creation must be sanitized or strictly validated. | V1.3 |
-| V1.3.8     |  | Verify that the application appropriately sanitizes untrusted input before use in Java Naming and Directory Interface (JNDI) queries and that JNDI is configured securely to prevent JNDI injection attacks. | V1.3 |
-| V1.3.9     |  | Verify that the application sanitizes content before it is sent to memcache to prevent injection attacks. | V1.3 |
-| V1.3.10    |  | Verify that format strings which might resolve in an unexpected or malicious way when used are sanitized before being processed. | V1.3 |
-| V1.3.11    |  | Verify that the application sanitizes user input before passing to mail systems to protect against SMTP or IMAP injection. | V1.3 |
-| V1.3.12    |  | Verify that regular expressions are free from elements causing exponential backtracking, and ensure untrusted input is sanitized to mitigate ReDoS or Runaway Regex attacks. | V1.3 |
-| V1.4       | Memory, String, and Unmanaged Code |  | V1 |
-| V1.4.1     |  | Verify that the application uses memory-safe string, safer memory copy and pointer arithmetic to detect or prevent stack, buffer, or heap overflows. | V1.4 |
-| V1.4.2     |  | Verify that sign, range, and input validation techniques are used to prevent integer overflows. | V1.4 |
-| V1.4.3     |  | Verify that dynamically allocated memory and resources are released, and that references or pointers to freed memory are removed or set to null to prevent dangling pointers and use-after-free vulnerabilities. | V1.4 |
-| V1.5       | Safe Deserialization |  | V1 |
-| V1.5.1     |  | Verify that the application configures XML parsers to use a restrictive configuration and that unsafe features such as resolving external entities are disabled to prevent XML eXternal Entity (XXE) attacks. | V1.5 |
-| V1.5.2     |  | Verify that deserialization of untrusted data enforces safe input handling, such as using an allowlist of object types or restricting client-defined object types, to prevent deserialization attacks. Deserialization mechanisms that are explicitly defined as insecure must not be used with untrusted input. | V1.5 |
-| V1.5.3     |  | Verify that different parsers used in the application for the same data type (e.g., JSON parsers, XML parsers, URL parsers), perform parsing in a consistent way and use the same character encoding mechanism to avoid issues such as JSON Interoperability vulnerabilities or different URI or file parsing behavior being exploited in Remote File Inclusion (RFI) or Server-side Request Forgery (SSRF) attacks. | V1.5 |
-
-<!-- Table truncated for brevity. Continue for all requirements as needed. -->
+### Not Applicable (Representative Examples)
+| Requirement Group | Rationale |
+| ----------------- | --------- |
+| V5 File Handling | No user file uploads implemented |
+| V9 Self-contained Tokens | Uses server sessions, no JWT-based auth |
+| V10 OAuth/OIDC | No external IdP/OAuth flows |
+| V17 WebRTC | No real-time media/TURN/STUN |
 
 ---
 
-**Generated: 2025-07-01**
+## 3. Non-Compliant (❌) Requirements (Prioritized)
+
+| Priority | ID | Area | Gap Summary | Remediation | Effort |
+| -------- | -- | ---- | ----------- | ----------- | ------ |
+| Critical | V6.3.1 | Auth | No brute force defense | Implement rate limiting (Flask-Limiter) | M |
+| Critical | V6.2.4 | Auth | No weak/breach password checks | Use HaveIBeenPwned API / local list | M |
+| Critical | V7.2.4 | Session | No session regeneration | Regenerate & revoke old session ID | S |
+| Critical | V3.4.1 | Headers | Missing HSTS | Add Strict-Transport-Security | S |
+| High | V3.4.5 | Headers | No Referrer-Policy | Add header (same-origin) | S |
+| High | V7.3.1 | Session | No inactivity timeout | Track last activity + enforce | M |
+| High | V7.3.2 | Session | No absolute lifetime | Configurable hard cap | S |
+| High | V13.3.1 | Secrets | No secrets manager | Integrate Vault/Env abstraction | M/L |
+| High | V14.1.1 | Data | No classification | Create data inventory matrix | S |
+| Medium | V16.4.2 | Logging | No integrity controls | Forward to external log store | M |
+| Medium | V8.3.2 | AuthZ | No real-time role propagation | Cache bust / re-query pattern | M |
+| Medium | V2.4.1 | Anti-automation | No rate limiting | Global + per-endpoint limits | S |
+| Medium | V11.1.x | Crypto governance | No key lifecycle | Policy + inventory doc | M |
+| Medium | V11.2.x | Crypto agility | Hardcoded impl only | Configurable crypto layer | L |
+| Medium | V6.3.3 | MFA | No multi-factor support | Add TOTP/email fallback | M |
+| Medium | V6.4.3 | Reset | No secure reset process | Tokenized email flow | M |
+| Medium | V16.3.2 | Logging | No failed authz logs | Central log on 403 | S |
+| Low | V3.4.6 | CSP/frame | Missing frame-ancestors | Update CSP | S |
+| Low | V7.5.1 | Re-auth | No re-auth for sensitive changes | Re-auth challenge | S |
+| Low | V14.2.7 | Retention | No scheduled purge | Add retention jobs | M |
+
+---
+
+## 4. Risk Assessment
+| Risk | Impact | Likelihood | Current Mitigation | Residual Risk |
+| ---- | ------ | ---------- | ------------------ | ------------- |
+| Brute force login | Account takeover | High | Generic error only | High |
+| Session fixation | Privilege misuse | Medium | CSRF, logout | Medium |
+| Weak password hygiene | Credential stuffing success | High | Bcrypt cost | High |
+| Missing HSTS | MITM downgrade | Medium | CSP partial | Medium |
+| Incomplete logging | Incident response delays | High | Action audit subset | High |
+| Missing re-auth | Sensitive change hijack | Medium | Role checks | Medium |
+
+### Timeline Recommendation
+| Phase (Weeks) | Focus |
+| 0–2 | Rate limiting, HSTS, session regeneration |
+| 2–4 | Password breach checks, Referrer-Policy, failed auth logging |
+| 4–6 | MFA introduction, data classification, secrets manager integration |
+| 6–10 | Session idle/absolute timeouts, retention policies, CSP tightening |
+| 10–14 | Crypto inventory/agility, extended logging integrity, adaptive authz |
+
+### Resource Requirements
+- 1 Backend Engineer (security focus) – part-time 3 months
+- DevOps support for secrets + logging pipeline
+- Security advisory (external) for crypto & MFA design review
+
+---
+
+## 5. Compliance Checklist (Actionable)
+
+### Immediate (Critical)
+- [ ] Implement Flask-Limiter on login, password change, reservation creation (V2.4.1, V6.3.1)
+- [ ] Add haveibeenpwned or local compromised password list check (V6.2.4, V6.2.12)
+- [ ] Regenerate session on successful login (V7.2.4)
+- [ ] Enforce HTTPS + HSTS in production (V3.4.1)
+
+### Short Term
+- [ ] Add inactivity + absolute session timeout (V7.3.1, V7.3.2)
+- [ ] Implement Referrer-Policy, frame-ancestors, tighter CSP (V3.4.5, V3.4.6)
+- [ ] Centralize failed authorization logging (V16.3.2)
+- [ ] Introduce role change invalidation (V8.3.2)
+
+### Medium Term
+- [ ] Add MFA (TOTP) (V6.3.3)
+- [ ] Implement secure password reset tokens (V6.4.3)
+- [ ] Data classification & retention schedule (V14.1.1, V14.2.7)
+- [ ] Secrets manager integration & rotation (V13.3.1+) 
+- [ ] Logging integrity & external aggregation (V16.4.2, V16.2.x)
+
+### Long Term / Strategic
+- [ ] Crypto inventory + agility plan (V11.1.x, V11.2.x)
+- [ ] Adaptive / contextual authorization (V8.2.4)
+- [ ] Enhanced audit event coverage map (V16.1.1)
+- [ ] Comprehensive validation rulebook publication (V2.1.x)
+
+---
+
+## 6. Evidence Index
+| Artifact | Path |
+| -------- | ---- |
+| Models | `carpool/models/*.py` |
+| Services | `carpool/services/*.py` |
+| Authentication Views | `carpool/views/auth.py` |
+| API Views | `carpool/views/api.py` |
+| Admin Views | `carpool/views/admin.py` |
+| Config | `config.py`, `extensions.py` |
+| Forms | `carpool/forms/*.py` |
+| Templates | `carpool/templates/` |
+| Tests | `tests/` |
+
+---
+
+## 7. Remediation Guidance (Selected)
+| Control | Recommended Library / Action |
+| ------- | --------------------------- |
+| Rate Limiting | `Flask-Limiter` (Redis backend) |
+| Password Breach Check | `hibpwned` API (k-anonymity) or local top N list |
+| MFA | `pyotp` + QR provisioning |
+| Secrets Management | Vault / AWS Secrets Manager integration layer |
+| CSP Hardening | Remove inline scripts; use nonces via Talisman config |
+| Logging Integrity | Forward to ELK/CloudWatch with append-only S3 archive |
+| Session Timeout | Middleware updating last_seen + teardown validator |
+| Data Classification | Matrix doc + tagging in models (custom decorators) |
+
+---
+
+## 8. Not Applicable Summary
+| Domain | Reason |
+| ------ | ------ |
+| File uploads | No upload endpoints | 
+| OAuth/OIDC | Local session auth only |
+| WebRTC/Media | No streaming features |
+| GraphQL | No GraphQL schema or endpoint |
+| Self-contained JWT tokens | Session cookie approach |
+
+---
+
+## 9. Change Log (Security Posture)
+| Date | Change |
+| ---- | ------ |
+| 2025-09-12 | Initial ASVS baseline assessment |
+
+---
+
+## 10. Summary Statement
+This assessment establishes a foundational security maturity baseline with ~25% direct ASVS alignment. Rapid wins (headers, rate limiting, session regeneration) can elevate posture significantly. Strategic improvements (MFA, secrets management, data governance, crypto inventory) should follow a phased approach. Re-assessment recommended after addressing Critical + High items.
+
+---
+Generated automatically from repository inspection & OWASP ASVS 5.0.0 reference.

@@ -1,55 +1,90 @@
-# System Documentation Hub
+# Carpool & Parking Management – Documentation Hub
 
 ## About
-
-This is a carpool and parking spot management system for organizations. It enables users to organize carpools, reserve parking spots, and manage their trips efficiently. The application provides user authentication, role-based access control, an admin dashboard, and RESTful APIs for integrations. It is designed for secure, auditable, and user-friendly operation in both small and large organizations.
+A Flask-based monolithic application enabling users to reserve parking spots, organize carpools, and for administrators to manage users, infrastructure, and operational insights—backed by a service layer, role-based access control, and audit logging.
 
 ## Quick Start
-
-1. Clone the repository and install dependencies (`pip install -r requirements.txt`).
-2. Set up a `.env` file with required environment variables (see `config.py`).
-3. Run database migrations (`flask db upgrade`).
-4. Start the application (`flask run` or `python run.py`).
-5. Access the app at `http://localhost:5000`.
+```bash
+# (Assumed environment)
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+export FLASK_APP=run.py
+flask db upgrade
+flask run
+```
 
 ## Documentation Links
-
-- [Architecture Overview](architecture.md)
-- [Business Logic & Functional Requirements](business_logic.md)
-- [Domain Data Model](domain_model.md)
-- [Database Structure & Schema](database_structure.md)
-- [API Specification (OpenAPI)](api_spec.yaml)
-- [Authentication & Security](auth_security.md)
+- [Architecture](./architecture.md)
+- [Business Logic](./business_logic.md)
+- [Domain Model](./domain_model.md)
+- [Database Structure](./database_structure.md)
+- [API Spec (OpenAPI)](./api_spec.yaml)
+- [Authentication & Security](./auth_security.md)
+- [User Flow Diagrams](./user_flow_diagrams.md)
 
 ## Diagram Index (Mermaid)
-
 - Architecture: flowchart (system-overview)
-- Reservation lifecycle: stateDiagram-v2 (reservation-states)
+- User flow: flowchart TD (user-journeys)
 - Domain model: erDiagram (entities-relationships)
 - Database structure: erDiagram (database-schema)
+- Reservation lifecycle: stateDiagram-v2 (business_logic)
+- Additional flowcharts: registration, login, reservation create/edit, admin operations
 
 ## Key Features
-
-- User authentication and role-based access control
-- Carpool trip organization and management
-- Parking spot reservation system
-- Admin dashboard for user, carpool, and reservation management
-- Audit logging of all admin actions
-- Responsive UI with Chart.js data visualizations
-- RESTful API endpoints for AJAX and integrations
+- Parking spot reservation with conflict prevention
+- Carpool trip creation & capacity tracking
+- Role-based admin console (users, parking, logs, analytics)
+- Real-time dashboard statistics + charts (AJAX / JSON endpoints)
+- Audit logging (actions table)
+- Hardened CSP & CSRF protection
+- Service layer enforcing business rules
+- Modular Blueprints: auth, main, admin, api
 
 ## Configuration
+| Variable | Purpose | Default |
+| -------- | ------- | ------- |
+| SECRET_KEY | Session signing | dev-secret-key-change-in-production |
+| DATABASE_URL | SQLAlchemy URI | sqlite:///carpool.db |
+| SECURITY_PASSWORD_SALT | Future token ops | salt-change-in-production |
+| ADMIN_USERNAME / ADMIN_PASSWORD / ADMIN_EMAIL | Bootstrap admin credentials | admin / admin123 / admin@carpool.com |
 
-- All secrets and environment variables must be set in `.env`
-  - `SECRET_KEY`, `DATABASE_URL`, `SECURITY_PASSWORD_SALT`, `ADMIN_USERNAME`, `ADMIN_PASSWORD`, `ADMIN_EMAIL`
-- See `config.py` for all configurable options.
+## API Overview
+See `api_spec.yaml` for formal OpenAPI definition (session cookie auth). Provides endpoints for stats aggregation, spot availability, carpool membership, quick reservation, activity feeds, and admin monitoring.
+
+## Security Highlights
+- bcrypt password hashing
+- CSRF enforcement
+- CSP via Flask-Talisman
+- Role-based route gating
+- Audit logs for critical mutations
+
+## Known Gaps / Future Enhancements
+- Implement real passenger membership model for carpools
+- Password reset token & email workflow
+- Rate limiting on login attempts
+- Improve Action schema (IP, user agent fields)
+- Index optimization (composite spot/date)
+- Eliminate `'unsafe-inline'` CSP exceptions
 
 ## Change Log
+| Version | Date | Reference | Description |
+| ------- | ---- | --------- | ----------- |
+| 0.1.0 | 2025-06-26 | migration bf20dc5ca70c | Added reservation status column |
+| 0.2.0 | 2025-07-xx | internal | Service layer consolidation & audit logging helpers |
+| 0.3.0 | 2025-08-xx | internal | Dashboard chart endpoints expansion |
+| 1.0.0 | 2025-09-xx | release | Documentation baseline & OpenAPI publication |
 
-- v1.0.0: Initial release with user authentication, carpool management, parking spot reservation, admin dashboard, and audit logging.
-- v1.1.0: Added RESTful API endpoints for AJAX and integrations.
-- v1.2.0: Improved security with Flask-Talisman and environment-based secrets.
-- v1.3.0: Enhanced UI with Chart.js visualizations and responsive design.
-- v1.4.0: Refactored business logic into service layer and improved test coverage.
+(Adjust dates/entries as releases formalize.)
 
-<!-- Reference implemented stories/changes in project management system as needed. -->
+## Maintenance Guidelines
+- Add migrations for any model changes (Alembic).
+- Keep service layer side-effect boundaries explicit.
+- Expand test suite beyond authentication & user model to cover reservations, carpools, admin flows.
+- Monitor audit log growth (consider archival strategy).
+
+## Contact / Ownership
+(Define engineering owner / team alias here.)
+
+---
+Generated from source inspection; discrepancies (e.g., carpool passenger handling) flagged in related docs.
