@@ -1,0 +1,359 @@
+openapi: 3.0.3
+info:
+  title: Carpool & Parking Management API
+  version: 1.0.0
+  description: >-
+    OpenAPI specification generated from existing Flask blueprints (`api`, `main`, `auth`, `admin`).
+    Only JSON-producing endpoints are formally specified; HTML-rendering routes are documented informally
+    with `text/html` responses. Authentication uses cookie-based session (Flask-Login).
+servers:
+  - url: http://localhost:5000
+    description: Local development server
+tags:
+  - name: Dashboard
+  - name: Reservations
+  - name: Carpools
+  - name: Parking
+  - name: Admin
+  - name: Auth
+  - name: System
+security:
+  - SessionAuth: []
+components:
+  securitySchemes:
+    SessionAuth:
+      type: apiKey
+      in: cookie
+      name: session
+      description: Flask session cookie established after /login form POST.
+  schemas:
+    User:
+      type: object
+      properties:
+        id: { type: integer }
+        username: { type: string }
+        email: { type: string, format: email }
+        role: { type: string, enum: [user, admin] }
+        created_at: { type: string, format: date-time }
+    ParkingSpot:
+      type: object
+      properties:
+        id: { type: string }
+        status: { type: string, enum: [available, reserved, maintenance] }
+        location: { type: string }
+        description: { type: string, nullable: true }
+        created_at: { type: string, format: date-time }
+    Reservation:
+      type: object
+      properties:
+        id: { type: integer }
+        spot_id: { type: string }
+        user_id: { type: integer }
+        name: { type: string }
+        reservation_date: { type: string, format: date }
+        status: { type: string }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    Carpool:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        origin: { type: string }
+        destination: { type: string }
+        departure_time: { type: string, format: date-time }
+        return_time: { type: string, format: date-time, nullable: true }
+        max_passengers: { type: integer }
+        current_passengers: { type: integer }
+        notes: { type: string, nullable: true }
+        organizer_id: { type: integer }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    Action:
+      type: object
+      properties:
+        id: { type: integer }
+        action_type: { type: string }
+        username: { type: string }
+        timestamp: { type: string, format: date-time }
+        details: { type: string, nullable: true }
+    Error:
+      type: object
+      properties:
+        success: { type: boolean }
+        error: { type: string }
+    SuccessMessage:
+      type: object
+      properties:
+        success: { type: boolean }
+        message: { type: string }
+paths:
+  /api/dashboard-stats:
+    get:
+      tags: [Dashboard]
+      summary: Get aggregated dashboard statistics
+      security: [{ SessionAuth: [] }]
+      responses:
+        '200':
+          description: Dashboard statistics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data:
+                    type: object
+                    properties:
+                      reservations: { type: object }
+                      carpools: { type: object }
+                      user:
+                        type: object
+                        properties:
+                          reservations: { type: integer }
+                          carpools: { type: integer }
+        '500': { $ref: '#/components/responses/ServerError' }
+  /api/available-spots/{date}:
+    get:
+      tags: [Reservations]
+      summary: List available parking spots for a date
+      parameters:
+        - in: path
+          name: date
+          required: true
+          schema: { type: string, format: date }
+      responses:
+        '200':
+          description: Available spots
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  date: { type: string }
+                  count: { type: integer }
+                  available_spots:
+                    type: array
+                    items: { $ref: '#/components/schemas/ParkingSpot' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '500': { $ref: '#/components/responses/ServerError' }
+  /api/reservations-chart-data:
+    get:
+      tags: [Dashboard]
+      summary: Reservation counts for last 7 days
+      responses:
+        '200': { description: Chart data }
+        '500': { $ref: '#/components/responses/ServerError' }
+  /api/carpools-chart-data:
+    get:
+      tags: [Dashboard]
+      summary: Carpool counts for next 7 days
+      responses:
+        '200': { description: Chart data }
+        '500': { $ref: '#/components/responses/ServerError' }
+  /api/carpool/{carpool_id}/join:
+    post:
+      tags: [Carpools]
+      summary: Join a carpool
+      parameters:
+        - in: path
+          name: carpool_id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Joined successfully }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/ServerError' }
+  /api/carpool/{carpool_id}/leave:
+    post:
+      tags: [Carpools]
+      summary: Leave a carpool
+      parameters:
+        - in: path
+          name: carpool_id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Left successfully }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/ServerError' }
+  /api/admin/activity-chart-data:
+    get:
+      tags: [Admin]
+      summary: Admin activity chart data
+      parameters:
+        - in: query
+          name: days
+          schema: { type: integer, default: 7 }
+      responses:
+        '200': { description: Activity chart data }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '500': { $ref: '#/components/responses/ServerError' }
+  /api/admin/system-stats:
+    get:
+      tags: [Admin]
+      summary: System statistics (admin)
+      responses:
+        '200': { description: System stats }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '500': { $ref: '#/components/responses/ServerError' }
+  /api/quick-reservation:
+    post:
+      tags: [Reservations]
+      summary: Create quick reservation (today)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, spot_id]
+              properties:
+                name: { type: string }
+                spot_id: { type: string }
+      responses:
+        '200': { description: Reservation created }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '500': { $ref: '#/components/responses/ServerError' }
+  /api/user-activity:
+    get:
+      tags: [System]
+      summary: Recent actions for current user
+      responses:
+        '200':
+          description: Recent actions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Action' }
+        '500': { $ref: '#/components/responses/ServerError' }
+  /api/dashboard/stats:
+    get:
+      tags: [Dashboard]
+      summary: Real-time dashboard statistics
+      responses:
+        '200': { description: Stats }
+        '500': { $ref: '#/components/responses/ServerError' }
+  /api/dashboard/reservations-trend:
+    get:
+      tags: [Dashboard]
+      summary: Reservation trend (7 days)
+      responses:
+        '200': { description: Trend data }
+        '500': { $ref: '#/components/responses/ServerError' }
+  /api/dashboard/parking-utilization:
+    get:
+      tags: [Dashboard]
+      summary: Parking utilization breakdown
+      responses:
+        '200': { description: Utilization }
+        '500': { $ref: '#/components/responses/ServerError' }
+  /api/dashboard/carpool-activity:
+    get:
+      tags: [Dashboard]
+      summary: Carpool creation activity (7 days)
+      responses:
+        '200': { description: Activity data }
+        '500': { $ref: '#/components/responses/ServerError' }
+  /api/dashboard/weekly-stats:
+    get:
+      tags: [Dashboard]
+      summary: Combined weekly stats (reservations & carpools)
+      responses:
+        '200': { description: Weekly stats }
+        '500': { $ref: '#/components/responses/ServerError' }
+  /api/dashboard/recent-activity:
+    get:
+      tags: [System]
+      summary: Recent system activities
+      responses:
+        '200': { description: Activity feed }
+        '500': { $ref: '#/components/responses/ServerError' }
+  /api/health-check:
+    get:
+      tags: [System]
+      summary: System health check
+      security: []
+      responses:
+        '200':
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string }
+                  timestamp: { type: string, format: date-time }
+                  version: { type: string }
+        '500': { $ref: '#/components/responses/ServerError' }
+  /api/error-report:
+    post:
+      tags: [System]
+      summary: Submit client error report
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                description: { type: string }
+                url: { type: string }
+                browser_info: { type: string }
+                email: { type: string }
+      responses:
+        '200': { description: Report accepted }
+        '500': { $ref: '#/components/responses/ServerError' }
+  /api/access-denied-log:
+    post:
+      tags: [System]
+      summary: Log access denied attempt
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                url: { type: string }
+                user_agent: { type: string }
+      responses:
+        '200': { description: Logged }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+components:
+  responses:
+    BadRequest:
+      description: Bad Request
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Forbidden:
+      description: Forbidden
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    ServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+
+  # NOTE: HTML-rendering endpoints (e.g., /login, /dashboard, /reservations) are part of UI layer
+  # and not duplicated here unless they provide JSON responses.
